@@ -1,52 +1,189 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import EventCarousel from './components/EventCarousel';
-import InvoiceModal from './components/InvoiceModal';
-import AuthModal from './components/AuthModal';
 import Footer from './components/Footer'; 
 import FloatingWidget from './components/FloatingWidget'; 
 import Toast from './components/Toast'; 
-import BackgroundWrapper from './components/BackgroundWrapper';
 import { WinRateCalculator, Leaderboard, TransactionLookup } from './components/Features';
-import { GAMES, type Game, type Product } from './data/games'; 
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
-import { CheckCircle2, Search, User, CreditCard, ShieldCheck, Zap, Smartphone, Monitor, Gamepad2 } from 'lucide-react';
+// --- IMPORTS ---
+import { GAMES } from './data/games'; 
+import type { Product } from './data/games';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  CheckCircle2, Search, User, CreditCard, Zap, 
+  Gamepad2, Loader2, ImageOff, Flame, Ticket, X
+} from 'lucide-react';
+
+// --- DATA CONSTANTS ---
 const PAYMENTS = [
   { id: 'qris', name: 'QRIS', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Qris.svg/1200px-Qris.svg.png' },
   { id: 'gopay', name: 'GoPay', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/2560px-Gopay_logo.svg.png' },
   { id: 'dana', name: 'DANA', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Logo_dana_blue.svg/2560px-Logo_dana_blue.svg.png' },
+  { id: 'ovo', name: 'OVO', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Logo_ovo_purple.svg/2560px-Logo_ovo_purple.svg.png' },
 ];
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+const RECENT_BUYS = [
+  { user: 'xX_Shadow_Xx', game: 'Mobile Legends', item: '86 Diamonds' },
+  { user: 'ProPlayer99', game: 'Valorant', item: '125 Points' },
+  { user: 'Kratos_ID', game: 'PUBG', item: '60 UC' },
+  { user: 'Ryu_Ken', game: 'Genshin Impact', item: '300 Crystals' },
+];
+
+// --- VISUAL SUB-COMPONENTS ---
+
+// 1. The Meteor Shower (Background)
+const MeteorShower = () => {
+  // Memoize to prevent re-renders
+  const meteors = useMemo(() => Array.from({ length: 15 }), []);
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {meteors.map((_, i) => (
+        <span
+          key={i}
+          className="absolute h-0.5 w-0.5 rotate-[215deg] animate-meteor rounded-[9999px] bg-slate-500 shadow-[0_0_0_1px_#ffffff10]"
+          style={{
+            top: 0,
+            left: Math.floor(Math.random() * 100) + "%",
+            animationDelay: Math.random() * (0.8 - 0.2) + 0.2 + "s",
+            animationDuration: Math.floor(Math.random() * (10 - 2) + 2) + "s",
+          }}
+        >
+          <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[50px] -translate-y-1/2 bg-gradient-to-r from-cyan-500 to-transparent" />
+        </span>
+      ))}
+    </div>
+  );
 };
 
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } }
+// 2. Star Field (Background)
+const StarField = () => {
+    const stars = useMemo(() => Array.from({ length: 40 }).map(() => ({
+        top: Math.random() * 100 + '%',
+        left: Math.random() * 100 + '%',
+        size: Math.random() * 2 + 1,
+        delay: Math.random() * 5
+    })), []);
+
+    return (
+        <div className="absolute inset-0">
+            {stars.map((star, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ opacity: 0.1 }}
+                    animate={{ opacity: [0.1, 0.8, 0.1] }}
+                    transition={{ duration: 4, repeat: Infinity, delay: star.delay, ease: "easeInOut" }}
+                    className="absolute bg-white rounded-full blur-[0.5px]"
+                    style={{ top: star.top, left: star.left, width: star.size, height: star.size }}
+                />
+            ))}
+        </div>
+    );
 };
+
+// 3. Spotlight Card (UI)
+const SpotlightCard = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: () => void }) => {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  return (
+    <div 
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onClick={onClick}
+      className={`spotlight-card relative overflow-hidden rounded-3xl p-[1px] bg-white/5 border border-white/10 ${onClick ? 'cursor-pointer hover:scale-[1.01] active:scale-[0.99]' : ''} transition-all duration-300 backdrop-blur-md ${className}`}
+      style={{ "--mouse-x": `${position.x}px`, "--mouse-y": `${position.y}px` } as React.CSSProperties}
+    >
+      {/* Spotlight Effect Layer */}
+      <div 
+        className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+            background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(168,85,247,0.15), transparent 40%)`
+        }}
+      />
+      {/* Border Glow Layer */}
+      <div 
+         className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+         style={{
+            background: `radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), rgba(6,182,212,0.3), transparent 40%)`,
+            zIndex: 0
+         }}
+      />
+      
+      <div className="relative z-10 h-full">{children}</div>
+    </div>
+  );
+};
+
+// 4. Confetti (Success)
+const ConfettiExplosion = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-50 flex items-center justify-center">
+    {[...Array(40)].map((_, i) => {
+      const angle = Math.random() * 360;
+      const velocity = 150 + Math.random() * 250;
+      const tx = Math.cos(angle * (Math.PI / 180)) * velocity + "px";
+      const ty = Math.sin(angle * (Math.PI / 180)) * velocity + "px";
+      return (
+        <div
+          key={i}
+          className="particle"
+          style={{ "--tx": tx, "--ty": ty, backgroundColor: ['#a855f7', '#06b6d4', '#ec4899', '#ffffff'][i % 4] } as React.CSSProperties}
+        />
+      );
+    })}
+  </div>
+);
+
+// 5. Image Helper
+const ImageWithFallback = ({ src, alt, className, type = 'cover' }: { src: string, alt: string, className?: string, type?: 'cover' | 'logo' }) => {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div className={`${className} bg-[#1a1528] flex items-center justify-center flex-col text-gray-600 border border-white/5`}>
+        {type === 'cover' ? <Gamepad2 size={40} className="mb-2 opacity-50"/> : <ImageOff size={20} />}
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setError(true)} loading="lazy" />;
+};
+
+
+// --- MAIN APP ---
 
 function App() {
   const [currentView, setCurrentView] = useState<'HOME' | 'HISTORY' | 'LEADERBOARD' | 'CALCULATOR' | 'SUCCESS'>('HOME');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'MOBILE' | 'PC'>('ALL'); // NEW FILTER
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'MOBILE' | 'PC'>('ALL');
   
+  // Transaction State
   const [userId, setUserId] = useState('');
   const [zoneId, setZoneId] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [trxId, setTrxId] = useState('');
+
+  // UI State
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authView, setAuthView] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error'; visible: boolean }>({ msg: '', type: 'success', visible: false });
 
-  const showToast = (msg: string, type: 'success' | 'error') => { setToast({ msg, type, visible: true }); };
-  
-  // Filter Logic
+  const showToast = (msg: string, type: 'success' | 'error') => { 
+    setToast({ msg, type, visible: true }); 
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  };
+
   const filteredGames = GAMES.filter(game => {
     const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'ALL' || game.category === categoryFilter;
@@ -55,6 +192,7 @@ function App() {
 
   const activeGame = GAMES.find(g => g.id === selectedGameId);
 
+  // Handlers
   const handleGameSelect = (id: string) => { 
     setSelectedGameId(id); 
     setCurrentView('HOME'); 
@@ -62,273 +200,468 @@ function App() {
     setZoneId(''); 
     setSelectedProduct(null); 
     setSelectedPayment(null); 
+    setDiscount(0);
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
-  
+
   const handleCheckout = () => { 
-      if(!userId || !selectedProduct || !selectedPayment) { 
-        showToast("Please complete all fields!", 'error'); 
-        return; 
-      } 
+      if(!userId || !selectedProduct || !selectedPayment) { showToast("Missing details.", 'error'); return; }
+      setIsProcessing(true);
+      setTimeout(() => {
+        setIsProcessing(false);
+        setTrxId(`INV-${Math.floor(Math.random() * 1000000000)}`);
+        setCurrentView('SUCCESS');
+        window.scrollTo(0,0);
+        showToast("Transaction Successful!", 'success');
+      }, 2000);
   };
 
-  const handlePaymentConfirm = () => { 
-      setCurrentView('SUCCESS'); 
-      window.scrollTo(0,0); 
-      showToast("Payment Confirmed!", 'success'); 
-  };
-  
-  const handleLoginSuccess = (u: any) => { setUser(u); showToast(`Welcome back, ${u.name}!`, 'success'); };
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   return (
-    <BackgroundWrapper>
-      <div className="min-h-screen font-sans text-white flex flex-col justify-between selection:bg-purple-500 selection:text-white">
-        <Toast message={toast.msg} type={toast.type} isVisible={toast.visible} onClose={() => setToast({ ...toast, visible: false })} />
-        <FloatingWidget />
+    <div className="min-h-screen text-white relative bg-[#050505] selection:bg-purple-500/30 selection:text-purple-200 overflow-x-hidden font-sans">
+      
+      {/* --- EXTREME BACKGROUND LAYER --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+          {/* Deep Space Gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a1528] via-[#050505] to-black" />
+          <StarField />
+          <MeteorShower />
+          {/* Atmospheric Fog */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80" />
+      </div>
 
-        {currentView === 'SUCCESS' ? (
-          <div className="h-screen flex flex-col items-center justify-center relative overflow-hidden">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center z-10 bg-[#0a0514]/80 backdrop-blur-xl p-12 rounded-[2rem] border border-green-500/30 shadow-[0_0_100px_rgba(34,197,94,0.3)]">
-              <div className="w-24 h-24 bg-gradient-to-tr from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(34,197,94,0.6)] animate-bounce">
-                <CheckCircle2 size={48} className="text-black" />
-              </div>
-              <h1 className="text-5xl font-black italic mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300">SUCCESS!</h1>
-              <p className="text-gray-300 mb-8 text-lg">Transaction ID: <span className="font-mono text-green-400">TRX-{Math.floor(Math.random()*100000)}</span><br/>Items sent to: <b className="text-white">{userId}</b></p>
-              <button onClick={() => { setCurrentView('HOME'); setSelectedGameId(null); }} className="bg-white text-black px-10 py-4 rounded-full font-black tracking-wide hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.4)]">TOP UP AGAIN</button>
-            </motion.div>
-          </div>
-        ) : (
-          <>
-            <Navbar 
-              onOpenAuth={(view) => { setAuthView(view); setIsAuthOpen(true); }} user={user} onLogout={() => { setUser(null); showToast("Logged out.", 'success'); }} currentView={currentView} onNavigate={(view) => { setCurrentView(view as any); setSelectedGameId(null); }} onSearch={setSearchQuery} 
-            />
-            
-            <div className="flex-grow">
-              {/* HERO & CAROUSEL */}
-              {currentView === 'HOME' && !selectedGameId && (
-                <>
-                  <Hero />
-                  <div className="container mx-auto px-4 md:px-6 -mt-10 relative z-10 mb-12">
-                    <EventCarousel /> 
+      <Toast message={toast.msg} type={toast.type} isVisible={toast.visible} onClose={() => setToast({ ...toast, visible: false })} />
+      <FloatingWidget />
+      
+      {/* --- LIVE TICKER --- */}
+      <div className="bg-black/40 backdrop-blur-md border-b border-white/5 py-2 flex items-center relative z-20">
+        <div className="flex items-center px-4 gap-2 text-[10px] font-black tracking-widest text-green-400 shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"/> LIVE
+        </div>
+        <div className="flex-1 overflow-hidden mask-linear-fade">
+            <div className="flex gap-12 animate-marquee whitespace-nowrap text-[10px] text-gray-500 font-mono">
+            {[...RECENT_BUYS, ...RECENT_BUYS, ...RECENT_BUYS].map((buy, i) => (
+                <span key={i} className="flex items-center gap-2">
+                <span className="w-1 h-1 bg-white/20 rounded-full"/>
+                <span className="text-gray-300 font-bold">{buy.user}</span> 
+                <span className="text-gray-600">purchased</span> 
+                <span className="text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">{buy.item}</span>
+                <span className="text-gray-600">in</span>
+                <span className="text-purple-400">{buy.game}</span>
+                </span>
+            ))}
+            </div>
+        </div>
+      </div>
+
+      <Navbar 
+        onOpenAuth={() => setIsAuthOpen(true)} 
+        user={user} 
+        onLogout={() => setUser(null)} 
+        currentView={currentView} 
+        onNavigate={(view) => { setCurrentView(view as any); setSelectedGameId(null); }} 
+        onSearch={() => setSearchOpen(true)} 
+      />
+
+      <div className="pt-24 pb-12 relative z-10"> 
+        <AnimatePresence mode="wait">
+
+          {/* 1. SUCCESS VIEW */}
+          {currentView === 'SUCCESS' ? (
+            <motion.div 
+              key="success"
+              initial={{ scale: 0.95, opacity: 0, filter: "blur(10px)" }} 
+              animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }} 
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="container mx-auto px-4 flex justify-center items-center min-h-[60vh]"
+            >
+              <div className="relative w-full max-w-sm">
+                <ConfettiExplosion />
+                <SpotlightCard className="w-full">
+                  <div className="bg-gradient-to-b from-purple-500/20 to-transparent p-10 text-center border-b border-white/5">
+                      <motion.div 
+                      initial={{scale:0, rotate: -180}} animate={{scale:1, rotate: 0}} transition={{type:"spring"}}
+                      className="w-24 h-24 bg-gradient-to-tr from-purple-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_50px_rgba(168,85,247,0.5)] ring-4 ring-white/10"
+                      >
+                        <CheckCircle2 size={48} className="text-white" />
+                      </motion.div>
+                      <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-lg">Mission Accomplished</h2>
+                      <p className="text-cyan-400 text-xs font-bold tracking-widest mt-2 uppercase">Payment Verified</p>
                   </div>
-                </>
-              )}
+                  <div className="p-8 space-y-5">
+                    <div className="flex justify-between items-center bg-black/40 p-5 rounded-xl border border-white/5">
+                      <span className="text-xs text-gray-400 uppercase font-bold tracking-widest">Total Amount</span>
+                      <span className="text-2xl font-black text-cyan-400">{selectedProduct?.price}</span>
+                    </div>
+                    <div className="space-y-1 text-[10px] font-mono text-gray-500 text-center py-2 bg-black/20 rounded-lg">
+                      <p>TRX ID: <span className="text-white">{trxId}</span></p>
+                      <p>ACCOUNT: <span className="text-white">{userId}</span> ({zoneId})</p>
+                    </div>
+                    <button onClick={() => { setCurrentView('HOME'); setSelectedGameId(null); }} className="w-full bg-white text-black py-4 rounded-xl font-black hover:bg-cyan-400 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                      Return to Base
+                    </button>
+                  </div>
+                </SpotlightCard>
+              </div>
+            </motion.div>
 
-              <div className="container mx-auto px-4 md:px-6 pb-20 min-h-[600px]">
-                <AnimatePresence mode="wait">
-                  
-                  {/* --- GAME GRID --- */}
-                  {currentView === 'HOME' && !selectedGameId && (
-                    <motion.div key="home" variants={containerVariants} initial="hidden" animate="visible" exit={{ opacity: 0, y: -20 }}>
-                      
-                      {/* FILTER BAR */}
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                         <div className="flex items-center gap-3">
-                             <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-cyan-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
-                             <h2 className="text-3xl font-black italic tracking-tight">POPULAR GAMES</h2>
-                         </div>
-                         
-                         <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
-                           {['ALL', 'MOBILE', 'PC'].map((cat) => (
-                             <button 
-                                key={cat}
-                                onClick={() => setCategoryFilter(cat as any)}
-                                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${categoryFilter === cat ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                             >
-                               {cat === 'ALL' ? <Gamepad2 size={16} /> : cat === 'MOBILE' ? <Smartphone size={16}/> : <Monitor size={16} />}
-                               <span className="ml-2 hidden md:inline">{cat}</span>
-                             </button>
-                           ))}
-                         </div>
+          /* 2. HOME VIEW */
+          ) : currentView === 'HOME' && !selectedGameId ? (
+            <motion.div key="home-grid" exit={{ opacity: 0, y: -20 }}>
+              <Hero />
+              
+              <div className="container mx-auto px-4 -mt-16 relative z-10 mb-20">
+                <EventCarousel /> 
+              </div>
+
+              <div className="container mx-auto px-4 md:px-6 max-w-7xl">
+                 <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6 border-b border-white/5 pb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-[0_0_20px_rgba(249,115,22,0.4)]">
+                        <Flame size={24} className="text-white fill-white"/>
                       </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                          {filteredGames.map((game) => (
-                            <motion.div 
-                              key={game.id} 
-                              variants={itemVariants}
-                              whileHover={{ y: -10, scale: 1.02 }}
-                              onClick={() => handleGameSelect(game.id)}
-                              className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden cursor-pointer border border-white/10 hover:border-purple-500/50 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.4)]"
-                            >
-                              <img src={game.image} alt={game.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0514] via-[#0a0514]/20 to-transparent" />
-                              
-                              {/* Floating Logo */}
-                              <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md p-1 border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                                <img src={game.logo} className="w-full h-full object-contain" />
-                              </div>
-
-                              <div className="absolute bottom-0 w-full p-5">
-                                <div className="transform transition-transform duration-300 group-hover:-translate-y-2">
-                                  <h3 className="text-xl md:text-2xl font-black italic uppercase leading-none mb-1 text-white drop-shadow-md">{game.name}</h3>
-                                  <p className="text-xs text-purple-300 font-bold tracking-wider uppercase">{game.publisher}</p>
-                                </div>
-                                <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                                   <div className="pt-3 flex items-center gap-2 text-xs text-green-400 font-bold">
-                                     <Zap size={12} fill="currentColor" /> INSTANT DELIVERY
-                                   </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
+                      <div>
+                        <h2 className="text-3xl font-black italic tracking-tighter text-white leading-none">GAME CATALOGUE</h2>
+                        <p className="text-gray-500 text-xs font-bold tracking-widest uppercase mt-1">Select your battlefield</p>
                       </div>
-                    </motion.div>
-                  )}
+                    </div>
+                    
+                    <div className="flex bg-white/5 p-1.5 rounded-2xl backdrop-blur-sm border border-white/5">
+                      {['ALL', 'MOBILE', 'PC'].map((cat) => (
+                        <button 
+                          key={cat} onClick={() => setCategoryFilter(cat as any)}
+                          className={`px-6 py-2.5 rounded-xl text-[10px] font-bold tracking-widest transition-all ${categoryFilter === cat ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                 </div>
 
-                  {/* --- DETAIL GAME VIEW --- */}
-                  {currentView === 'HOME' && selectedGameId && activeGame && (
-                    <motion.div key="detail" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="max-w-6xl mx-auto">
-                      
-                      {/* Header Detail */}
-                      <div className="relative rounded-[3rem] overflow-hidden mb-10 border border-white/10 shadow-2xl">
-                        {/* Background Banner */}
-                        <div className="absolute inset-0">
-                           <img src={activeGame.image} className="w-full h-full object-cover blur-sm opacity-50" />
-                           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0514] via-[#0a0514]/90 to-transparent" />
-                        </div>
+                 <motion.div layout className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    <AnimatePresence>
+                    {filteredGames.map((game) => (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.8 }} 
+                        animate={{ opacity: 1, scale: 1 }} 
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        key={game.id}
+                        className="h-full"
+                      >
+                        <SpotlightCard onClick={() => handleGameSelect(game.id)} className="h-full group">
+                          <div className="relative aspect-[3/4] w-full overflow-hidden">
+                            <ImageWithFallback src={game.image} alt={game.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 will-change-transform" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0f0a1e] via-transparent to-transparent opacity-90" />
+                            
+                            {/* Hover Overlay */}
+                            <div className="absolute inset-0 bg-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-overlay" />
 
-                        <div className="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center md:items-end">
-                          <img src={activeGame.logo} alt={activeGame.name} className="w-32 h-32 md:w-40 md:h-40 rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.1)] object-cover bg-black/50 p-2 border border-white/10" />
-                          <div className="flex-1 text-center md:text-left">
-                            <button onClick={() => setSelectedGameId(null)} className="inline-flex items-center gap-2 text-gray-400 hover:text-white font-bold mb-4 transition-colors">
-                              <Search className="rotate-90" size={16} /> Back to Games
-                            </button>
-                            <h1 className="text-4xl md:text-7xl font-black italic uppercase text-white mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">{activeGame.name}</h1>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm font-bold text-gray-300">
-                               <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2"><ShieldCheck size={14} className="text-green-400"/> Official Distributor</span>
-                               <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2"><Zap size={14} className="text-yellow-400"/> Instant 24/7</span>
+                            <div className="absolute bottom-0 w-full p-5 z-20">
+                              <h3 className="text-lg font-black italic uppercase text-white leading-none mb-2 group-hover:text-cyan-400 transition-colors drop-shadow-md">{game.name}</h3>
+                              <div className="flex items-center gap-2">
+                                 <span className="text-[9px] font-bold bg-white/10 text-white/80 px-2 py-0.5 rounded backdrop-blur-md border border-white/10 uppercase tracking-wider">{game.publisher}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* LEFT COLUMN: INPUTS & PAYMENT */}
-                        <div className="lg:col-span-2 space-y-8">
-                          
-                          {/* SECTION 1: USER ID */}
-                          <div className="bg-[#130d21]/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[2rem] relative overflow-hidden group hover:border-purple-500/30 transition-colors">
-                             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-purple-500 to-indigo-600" />
-                             <h3 className="text-xl font-black italic flex items-center gap-3 mb-6"><span className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm shadow-[0_0_15px_rgba(168,85,247,0.5)]">1</span> ACCOUNT DATA</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <div className="relative">
-                                 <User className="absolute left-4 top-4 text-gray-500 group-focus-within:text-purple-400 transition-colors" size={20} />
-                                 <input type="text" placeholder="User ID" value={userId} onChange={e => setUserId(e.target.value)} className="w-full bg-[#05020a] border border-white/10 rounded-2xl py-4 pl-12 text-white focus:border-purple-500 focus:bg-[#0a0514] outline-none transition-all" />
-                               </div>
-                               <div className="relative">
-                                 <Zap className="absolute left-4 top-4 text-gray-500 group-focus-within:text-purple-400 transition-colors" size={20} />
-                                 <input type="text" placeholder="Zone ID (Optional)" value={zoneId} onChange={e => setZoneId(e.target.value)} className="w-full bg-[#05020a] border border-white/10 rounded-2xl py-4 pl-12 text-white focus:border-purple-500 focus:bg-[#0a0514] outline-none transition-all" />
-                               </div>
-                             </div>
-                          </div>
-
-                          {/* SECTION 2: ITEMS */}
-                          <div className="bg-[#130d21]/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[2rem] relative overflow-hidden">
-                             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-cyan-400 to-blue-600" />
-                             <h3 className="text-xl font-black italic flex items-center gap-3 mb-6"><span className="w-8 h-8 rounded-full bg-cyan-500 text-black flex items-center justify-center text-sm shadow-[0_0_15px_rgba(6,182,212,0.5)]">2</span> SELECT ITEM</h3>
-                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {activeGame.products.map((p, idx) => (
-                                  <div 
-                                    key={idx} 
-                                    onClick={() => setSelectedProduct(p)}
-                                    className={`cursor-pointer p-4 rounded-2xl border transition-all relative overflow-hidden group ${selectedProduct?.name === p.name ? 'bg-cyan-500/10 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)]' : 'bg-[#05020a] border-white/5 hover:border-white/20 hover:bg-white/5'}`}
-                                  >
-                                    <h4 className="font-bold text-sm text-gray-300 group-hover:text-white transition-colors">{p.name}</h4>
-                                    <p className={`font-black italic mt-2 text-lg ${selectedProduct?.name === p.name ? 'text-cyan-400' : 'text-white'}`}>{p.price}</p>
-                                    {selectedProduct?.name === p.name && <div className="absolute top-2 right-2 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_10px_cyan]" />}
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-
-                          {/* SECTION 3: PAYMENTS */}
-                          <div className="bg-[#130d21]/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[2rem] relative overflow-hidden">
-                             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-pink-500 to-rose-600" />
-                             <h3 className="text-xl font-black italic flex items-center gap-3 mb-6"><span className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center text-sm shadow-[0_0_15px_rgba(236,72,153,0.5)]">3</span> PAYMENT</h3>
-                             <div className="space-y-3">
-                                {PAYMENTS.map((pay) => (
-                                  <div 
-                                    key={pay.id} 
-                                    onClick={() => setSelectedPayment(pay.id)}
-                                    className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${selectedPayment === pay.id ? 'bg-pink-500/10 border-pink-500 shadow-[inset_0_0_20px_rgba(236,72,153,0.1)]' : 'bg-[#05020a] border-white/5 hover:bg-white/5'}`}
-                                  >
-                                    <div className="flex items-center gap-4">
-                                      <div className="bg-white p-1 rounded-lg w-12 h-8 flex items-center justify-center">
-                                         <img src={pay.icon} alt={pay.name} className="h-full w-auto object-contain" />
-                                      </div>
-                                      <span className="font-bold">{pay.name}</span>
-                                    </div>
-                                    {selectedProduct && selectedPayment === pay.id && (
-                                      <div className="text-right">
-                                          <p className="text-xs text-gray-400 line-through">{selectedProduct.price}</p>
-                                          <span className="font-black text-pink-400 text-lg">{selectedProduct.price}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-
-                        </div>
-
-                        {/* RIGHT COLUMN: SUMMARY (STICKY) */}
-                        <div className="lg:col-span-1">
-                          <div className="sticky top-28 bg-[#130d21] border border-white/10 rounded-[2rem] p-8 shadow-2xl overflow-hidden">
-                             {/* Decoration */}
-                             <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-                             
-                             <h3 className="text-xl font-black italic mb-6 relative z-10">ORDER DETAILS</h3>
-                             <div className="space-y-4 text-sm mb-8 border-b border-white/10 pb-8 relative z-10">
-                               <div className="flex justify-between text-gray-400"><span>User ID</span><span className="text-white font-mono bg-white/5 px-2 py-0.5 rounded">{userId || '-'}</span></div>
-                               <div className="flex justify-between text-gray-400"><span>Product</span><span className="text-white text-right w-1/2">{selectedProduct?.name || '-'}</span></div>
-                               <div className="flex justify-between text-gray-400"><span>Payment</span><span className="text-white capitalize flex items-center gap-1">{selectedPayment ? <div className="w-2 h-2 bg-green-500 rounded-full"/> : ''}{selectedPayment || '-'}</span></div>
-                             </div>
-                             <div className="flex justify-between items-end mb-8 relative z-10">
-                               <span className="font-bold text-gray-400 mb-1">Total Pay</span>
-                               <span className="text-3xl font-black italic text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]">{selectedProduct?.price || 'Rp 0'}</span>
-                             </div>
-                             <button 
-                               onClick={handleCheckout}
-                               disabled={!userId || !selectedProduct || !selectedPayment}
-                               className={`w-full py-5 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all relative z-10 ${(!userId || !selectedProduct || !selectedPayment) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-white to-gray-200 text-black hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]'}`}
-                             >
-                               <CreditCard size={20} /> PAY NOW
-                             </button>
-                             <p className="text-center text-[10px] text-gray-500 mt-4 relative z-10">
-                               <ShieldCheck size={10} className="inline mr-1" /> Secure 256-bit SSL Encryption
-                             </p>
-                          </div>
-                        </div>
-
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentView === 'HISTORY' && <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><TransactionLookup /></motion.div>}
-                  {currentView === 'CALCULATOR' && <motion.div key="calc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><WinRateCalculator /></motion.div>}
-                  {currentView === 'LEADERBOARD' && <motion.div key="leaderboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><Leaderboard /></motion.div>}
-
-                </AnimatePresence>
+                        </SpotlightCard>
+                      </motion.div>
+                    ))}
+                    </AnimatePresence>
+                 </motion.div>
               </div>
-            </div>
+            </motion.div>
 
-            <Footer />
-            
-            <InvoiceModal 
-              isOpen={!!(userId && selectedProduct && selectedPayment && currentView === 'HOME' && selectedGameId)} 
-              onClose={() => setSelectedPayment(null)} 
-              onConfirm={handlePaymentConfirm} 
-              productName={selectedProduct?.name || ''} 
-              price={selectedProduct?.price || ''} 
-            />
-            
-            <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} initialView={authView} onLoginSuccess={handleLoginSuccess} />
-          </>
-        )}
+          /* 3. CHECKOUT VIEW */
+          ) : currentView === 'HOME' && selectedGameId && activeGame ? (
+            <motion.div 
+              key="detail" 
+              initial={{ opacity: 0, x: 50 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: 50 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="container mx-auto px-4 max-w-6xl"
+            >
+              <button onClick={() => setSelectedGameId(null)} className="mb-8 flex items-center gap-2 text-gray-400 hover:text-white font-bold text-xs uppercase tracking-widest hover:-translate-x-2 transition-transform">
+                <div className="bg-white/10 p-2 rounded-full"><Search className="rotate-90" size={14} /></div>
+                Abort Mission / Back
+              </button>
+
+              <SpotlightCard className="mb-10 rounded-[2.5rem] border-0 ring-1 ring-white/10 shadow-2xl">
+                  <div className="relative h-64 md:h-96 overflow-hidden group">
+                    <ImageWithFallback src={activeGame.image} alt={activeGame.name} className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-[2s] ease-in-out" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
+                    
+                    <div className="absolute bottom-0 left-0 p-8 md:p-16 flex flex-col md:flex-row items-start md:items-end gap-8 w-full">
+                      <motion.div 
+                        initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                        className="w-28 h-28 md:w-40 md:h-40 rounded-3xl overflow-hidden border-2 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-black"
+                      >
+                        <ImageWithFallback src={activeGame.logo} alt={activeGame.name} className="w-full h-full object-cover" type="logo" />
+                      </motion.div>
+                      <div className="mb-2">
+                          <motion.h1 
+                            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
+                            className="text-5xl md:text-7xl font-black italic uppercase text-white tracking-tighter drop-shadow-lg"
+                          >
+                            {activeGame.name}
+                          </motion.h1>
+                          <motion.p 
+                            initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+                            className="text-cyan-400 font-bold flex items-center gap-2 mt-3 text-sm uppercase tracking-widest"
+                          >
+                            <Zap size={16} className="fill-cyan-400"/> Instant Delivery Protocol Active
+                          </motion.p>
+                      </div>
+                    </div>
+                  </div>
+              </SpotlightCard>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* LEFT: FORM */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* ID Input */}
+                  <SpotlightCard className="p-8">
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-black border border-purple-500/30">01</div>
+                        <h3 className="font-black text-xl italic tracking-wider">TARGET IDENTIFICATION</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="relative group">
+                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">User ID</label>
+                           <div className="relative">
+                              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-400 transition-colors" size={18}/>
+                              <input type="text" placeholder="Enter ID" value={userId} onChange={e => setUserId(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm font-bold focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-gray-700" />
+                           </div>
+                        </div>
+                        <div className="relative group">
+                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block ml-1">Zone ID</label>
+                           <div className="relative">
+                              <Gamepad2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-purple-400 transition-colors" size={18}/>
+                              <input type="text" placeholder="Enter Zone" value={zoneId} onChange={e => setZoneId(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm font-bold focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder:text-gray-700" />
+                           </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+                         <div className="w-1.5 h-1.5 rounded-full bg-gray-600" /> 
+                         Ensure target details are correct to prevent resource loss.
+                      </div>
+                  </SpotlightCard>
+
+                  {/* Products */}
+                  <SpotlightCard className="p-8">
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-black border border-cyan-500/30">02</div>
+                        <h3 className="font-black text-xl italic tracking-wider">SELECT RESOURCE PACKAGE</h3>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {activeGame.products && activeGame.products.map((p, idx) => (
+                          <div 
+                            key={idx}
+                            onClick={() => setSelectedProduct(p)}
+                            className={`relative p-5 rounded-2xl border cursor-pointer transition-all duration-300 group ${selectedProduct?.name === p.name ? 'bg-cyan-500/10 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)]' : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/10'}`}
+                          >
+                            <div className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide group-hover:text-gray-300">{p.name}</div>
+                            <div className={`font-black italic text-xl ${selectedProduct?.name === p.name ? 'text-cyan-400' : 'text-white'}`}>{p.price}</div>
+                            {selectedProduct?.name === p.name && (
+                                <motion.div layoutId="check" className="absolute top-2 right-2 text-cyan-500"><CheckCircle2 size={16} className="fill-cyan-500/20"/></motion.div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                  </SpotlightCard>
+
+                  {/* Payment */}
+                  <SpotlightCard className="p-8">
+                      <div className="flex items-center gap-4 mb-8">
+                        <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 font-black border border-pink-500/30">03</div>
+                        <h3 className="font-black text-xl italic tracking-wider">PAYMENT PROTOCOL</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {PAYMENTS.map((pay) => (
+                          <div 
+                            key={pay.id}
+                            onClick={() => setSelectedPayment(pay.id)}
+                            className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${selectedPayment === pay.id ? 'bg-pink-500/10 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.15)]' : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/10'}`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="bg-white p-2 rounded-lg w-16 h-10 flex items-center justify-center shadow-sm"><ImageWithFallback src={pay.icon} alt={pay.name} className="max-h-full max-w-full object-contain"/></div>
+                              <span className="font-bold text-sm tracking-wide">{pay.name}</span>
+                            </div>
+                            {selectedProduct && selectedPayment === pay.id && (
+                              <div className="text-right">
+                                {discount > 0 && <div className="text-[10px] text-green-400 line-through mb-1">{selectedProduct.price}</div>}
+                                <div className="font-black text-pink-500 text-lg">{discount > 0 ? "Rp " + (selectedProduct.rawValue - discount).toLocaleString('id-ID') : selectedProduct.price}</div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                  </SpotlightCard>
+                </div>
+
+                {/* RIGHT: SUMMARY */}
+                <div className="lg:col-span-1">
+                   <div className="sticky top-28 space-y-6">
+                    <SpotlightCard className="p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/10">
+                      <h3 className="font-black italic text-xl mb-8 tracking-widest text-white flex items-center gap-2">
+                        <span className="w-1 h-6 bg-cyan-500 rounded-full"/> MANIFEST
+                      </h3>
+                      
+                      <div className="space-y-4 mb-8 text-sm">
+                          <div className="flex justify-between border-b border-dashed border-white/10 pb-4">
+                              <span className="text-gray-500 font-medium">Item</span>
+                              <span className="text-white font-bold text-right">{selectedProduct?.name || '-'}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-dashed border-white/10 pb-4">
+                              <span className="text-gray-500 font-medium">Method</span>
+                              <span className="text-white uppercase font-bold text-right">{selectedPayment || '-'}</span>
+                          </div>
+                          
+                          {/* Promo */}
+                          <div className="pt-2">
+                            <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2 block">Voucher Code</label>
+                            <div className="flex gap-2">
+                              <div className="relative flex-grow">
+                                <Ticket size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"/>
+                                <input type="text" placeholder="CODE" value={promoCode} onChange={e => setPromoCode(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 py-2.5 text-xs text-white focus:border-purple-500 outline-none uppercase font-mono tracking-widest"/>
+                              </div>
+                              <button onClick={() => { if(promoCode === 'GAMER'){ setDiscount(5000); showToast("Voucher Redeemed!", 'success'); } else { showToast("Invalid Code", 'error'); }}} className="bg-white/10 hover:bg-white/20 px-4 rounded-lg text-xs font-bold transition-colors">APPLY</button>
+                            </div>
+                          </div>
+                      </div>
+
+                      <div className="flex justify-between items-center mb-8 pt-6 border-t-2 border-white/5">
+                          <span className="text-gray-400 font-black uppercase text-xs tracking-widest">Total Payable</span>
+                          <span className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-sm">
+                            {selectedProduct ? `Rp ${(selectedProduct.rawValue - discount).toLocaleString('id-ID')}` : 'Rp 0'}
+                          </span>
+                      </div>
+
+                      <button 
+                        onClick={handleCheckout}
+                        disabled={!userId || !selectedProduct || !selectedPayment || isProcessing}
+                        className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-3 transition-all duration-300 relative overflow-hidden group/btn ${(!userId || !selectedProduct || !selectedPayment || isProcessing) ? 'bg-white/10 text-gray-500 cursor-not-allowed' : 'bg-white text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.3)]'}`}
+                      >
+                         <div className={`absolute inset-0 bg-gradient-to-r from-cyan-400 to-purple-500 opacity-0 group-hover/btn:opacity-20 transition-opacity`} />
+                        {isProcessing ? <Loader2 className="animate-spin" /> : <CreditCard size={18} />}
+                        <span className="relative z-10 tracking-widest text-sm">{isProcessing ? 'PROCESSING...' : 'CONFIRM PAYMENT'}</span>
+                      </button>
+                      
+                      <p className="text-[10px] text-gray-600 text-center mt-4">Secure 256-bit SSL Encrypted Transaction</p>
+                    </SpotlightCard>
+                   </div>
+                </div>
+              </div>
+            </motion.div>
+
+          /* 4. OTHER FEATURES */
+          ) : (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="container mx-auto px-4">
+              {currentView === 'HISTORY' && <TransactionLookup />}
+              {currentView === 'CALCULATOR' && <WinRateCalculator />}
+              {currentView === 'LEADERBOARD' && <Leaderboard />}
+            </motion.div>
+          )}
+
+        </AnimatePresence>
       </div>
-    </BackgroundWrapper>
+      
+      <Footer />
+
+      {/* --- COMMAND PALETTE (Global Search) --- */}
+      <AnimatePresence>
+      {searchOpen && (
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-start justify-center pt-[15vh] px-4" onClick={() => setSearchOpen(false)}>
+           <motion.div initial={{scale:0.9, y: 20}} animate={{scale:1, y: 0}} exit={{scale:0.9, y: 20}} className="w-full max-w-2xl bg-[#0f0a1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/10" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-4 px-6 py-6 border-b border-white/10">
+                 <Search className="text-purple-500" size={24}/>
+                 <input 
+                  autoFocus 
+                  type="text" 
+                  placeholder="Search catalogue..." 
+                  className="flex-1 bg-transparent outline-none text-white text-xl placeholder:text-gray-600 font-medium"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+                 <button onClick={() => setSearchOpen(false)} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400">ESC</button>
+              </div>
+              <div className="p-2 max-h-[60vh] overflow-y-auto">
+                 {filteredGames.length > 0 ? (
+                    filteredGames.map(game => (
+                       <div key={game.id} onClick={() => { handleGameSelect(game.id); setSearchOpen(false); }} className="flex items-center gap-4 p-4 hover:bg-white/5 rounded-xl cursor-pointer group transition-colors border border-transparent hover:border-white/5">
+                          <img src={game.logo} className="w-12 h-12 rounded-lg object-cover shadow-lg group-hover:scale-110 transition-transform" alt={game.name}/>
+                          <div>
+                             <div className="font-bold text-gray-200 group-hover:text-white text-lg">{game.name}</div>
+                             <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{game.publisher}</div>
+                          </div>
+                          <ArrowIcon className="ml-auto text-gray-600 group-hover:text-purple-500" />
+                       </div>
+                    ))
+                 ) : (
+                    <div className="p-12 text-center text-gray-600 font-bold">No results found in database.</div>
+                 )}
+              </div>
+              <div className="px-6 py-3 bg-black/40 text-[10px] text-gray-500 flex justify-between">
+                 <span>PRO TIP: Use arrow keys to navigate</span>
+                 <span>v2.0.5-stable</span>
+              </div>
+           </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+      {isAuthOpen && (
+        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+           <SpotlightCard className="p-10 max-w-md w-full text-center border border-white/10 shadow-2xl relative">
+              <button onClick={() => setIsAuthOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X size={20}/></button>
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                 <User size={32} className="text-white"/>
+              </div>
+              <h2 className="text-3xl font-black italic mb-2 text-white tracking-tighter uppercase">Identify Yourself</h2>
+              <p className="text-gray-400 text-sm mb-8 leading-relaxed">Login to sync your battle data, track transaction history, and unlock elite rewards.</p>
+              
+              <button onClick={() => { setUser({name: 'Viper', email: 'user@test.com'}); setIsAuthOpen(false); showToast("Welcome back, Commander.", 'success'); }} className="w-full bg-white text-black py-4 rounded-xl font-black mb-4 hover:bg-cyan-400 transition-colors uppercase tracking-widest shadow-lg">Connect Wallet / Login</button>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-6">Secure Access v1.0</p>
+           </SpotlightCard>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* --- GLOBAL STYLES FOR ANIMATION --- */}
+      <style>{`
+        @keyframes meteor {
+          0% { transform: rotate(215deg) translateX(0); opacity: 1; }
+          70% { opacity: 1; }
+          100% { transform: rotate(215deg) translateX(-500px); opacity: 0; }
+        }
+        .animate-meteor {
+          animation: meteor 5s linear infinite;
+        }
+        .mask-linear-fade {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+      `}</style>
+    </div>
   );
 }
+
+const ArrowIcon = ({ className }: { className?: string }) => (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
 
 export default App;

@@ -1,43 +1,48 @@
 // src/data/events.ts
+
 export const EVENTS = [
   {
     id: 1,
     game: "Mobile Legends",
-    title: "M5 CHAMPIONSHIP",
-    subtitle: "YU ZHONG SKIN NOW",
-    desc: "The M5 Pass is finally here. Level up to get the exclusive Cosmic Dragon skin!",
-    image: "https://images5.alphacoders.com/134/1341071.jpeg",
-    color: "from-yellow-600 to-orange-600",
-    btnColor: "bg-yellow-500",
+    title: "M7 CHAMPIONS",
+    subtitle: "GLORY CELEBRATION",
+    desc: "The M7 World Champions have been crowned! Claim the exclusive 'M7 Glory' avatar border and get 50% off the Champion's signature hero skin bundle. Limited time offer.",
+    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2670&auto=format&fit=crop", // Placeholder for M7 Stage/Trophy
+    color: "from-yellow-400 via-yellow-600 to-yellow-900", // Gold Theme for Champions
+    btnText: "VIEW BUNDLE",
+    endsIn: "4 DAYS"
   },
   {
     id: 2,
     game: "Genshin Impact",
     title: "LANTERN RITE",
-    subtitle: "VERSION 4.4 LIVE",
-    desc: "Celebrate the new year in Liyue with Xianyun and Gaming. Top up Genesis Crystals now.",
-    image: "https://images8.alphacoders.com/134/1347648.jpeg",
-    color: "from-cyan-500 to-teal-500",
-    btnColor: "bg-cyan-400",
+    subtitle: "YEAR OF THE HORSE",
+    desc: "The harbor shines bright. Log in now to claim 10 Intertwined Fates and invite a 4-Star Liyue character of your choice. The new 'Snezhnayan Diplomat' outfit is now in store.",
+    image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop", // Fireworks/Lanterns
+    color: "from-orange-500 via-amber-500 to-red-600",
+    btnText: "CLAIM FATES",
+    endsIn: "18 HRS"
   },
   {
     id: 3,
-    game: "Free Fire",
-    title: "CHAOS EVENT",
-    subtitle: "INNER EVIL BUNDLE",
-    desc: "Vote for the Chaos event changes and win exclusive legendary bundles.",
-    image: "https://images2.alphacoders.com/112/1127945.jpg", 
-    color: "from-purple-600 to-pink-600",
-    btnColor: "bg-pink-500",
+    game: "Mobile Legends",
+    title: "AOT COLLAB",
+    subtitle: "THE FINAL RUMBLE",
+    desc: "Attack on Titan x MLBB Return! The Rumbling arrives in the Land of Dawn. Secure the Eren, Mikasa, and Levi skins before they vanish from the shop forever.",
+    image: "https://images.unsplash.com/photo-1620553750039-4d8b9d9c228d?q=80&w=2600&auto=format&fit=crop", // Dark/Anime vibe
+    color: "from-red-800 via-red-600 to-black",
+    btnText: "DRAW SKINS",
+    endsIn: "6 DAYS"
   },
   {
     id: 4,
     game: "Valorant",
-    title: "EPISODE 8: DEFIANCE",
-    subtitle: "NEW WEAPON: OUTLAW",
-    desc: "The first new gun since launch is here. Get the Kuronami bundle today!",
-    image: "https://images3.alphacoders.com/134/1345513.jpeg",
-    color: "from-red-600 to-rose-600",
-    btnColor: "bg-red-500",
-  },
+    title: "VCT 2026",
+    subtitle: "KICKOFF CAPSULE",
+    desc: "Support your region. The 2026 Team Capsules are here. 50% of profits go directly to the partnered teams. Show your colors on the server.",
+    image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=2665&auto=format&fit=crop", // Neon/Cyberpunk
+    color: "from-indigo-500 via-purple-600 to-violet-900",
+    btnText: "INSPECT SKINS",
+    endsIn: "2 WEEKS"
+  }
 ];

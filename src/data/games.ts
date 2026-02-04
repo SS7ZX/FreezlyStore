@@ -3,16 +3,17 @@
 export interface Product {
   name: string;
   price: string;
+  rawValue: number; // Added for calculation logic
 }
 
 export interface Game {
   id: string;
   name: string;
   publisher: string;
-  image: string;
-  logo: string;
+  image: string; // Cover image (Wide)
+  logo: string;  // Icon image (Square)
   category: 'MOBILE' | 'PC';
-  products: Product[]; // <--- THIS MUST BE HERE
+  products: Product[];
 }
 
 export const GAMES: Game[] = [
@@ -21,15 +22,15 @@ export const GAMES: Game[] = [
     name: 'Mobile Legends',
     publisher: 'Moonton',
     category: 'MOBILE',
-    image: 'https://images5.alphacoders.com/115/1152643.jpg',
+    // UPDATED: M7 Champion Branding Image
+    image: 'https://images.unsplash.com/photo-1628277613967-6bc3d4505c11?q=80&w=2670&auto=format&fit=crop', 
     logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/cf/Mobile_Legends_Bang_Bang_logo.png/220px-Mobile_Legends_Bang_Bang_logo.png',
     products: [
-      { name: '86 Diamonds', price: 'Rp 20.000' },
-      { name: '172 Diamonds', price: 'Rp 40.000' },
-      { name: '257 Diamonds', price: 'Rp 60.000' },
-      { name: '706 Diamonds', price: 'Rp 160.000' },
-      { name: '2195 Diamonds', price: 'Rp 500.000' },
-      { name: 'Twilight Pass', price: 'Rp 150.000' },
+      { name: 'Weekly Diamond Pass', price: 'Rp 27.500', rawValue: 27500 },
+      { name: '86 Diamonds', price: 'Rp 19.100', rawValue: 19100 },
+      { name: '172 Diamonds', price: 'Rp 38.200', rawValue: 38200 },
+      { name: '257 Diamonds', price: 'Rp 57.500', rawValue: 57500 },
+      { name: 'M7 Glory Pass', price: 'Rp 150.000', rawValue: 150000 }, // Added M7 Item
     ]
   },
   {
@@ -37,14 +38,14 @@ export const GAMES: Game[] = [
     name: 'Free Fire',
     publisher: 'Garena',
     category: 'MOBILE',
-    image: 'https://c4.wallpaperflare.com/wallpaper/777/582/385/garena-free-fire-battlegrounds-video-games-poster-wallpaper-preview.jpg',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a3/Free_Fire_Logo.png/220px-Free_Fire_Logo.png',
+    image: 'https://images2.alphacoders.com/109/1099688.jpg',
+    logo: 'https://upload.wikimedia.org/wikipedia/en/a/a3/Free_Fire_Logo.png',
     products: [
-      { name: '100 Diamonds', price: 'Rp 16.000' },
-      { name: '310 Diamonds', price: 'Rp 46.000' },
-      { name: '520 Diamonds', price: 'Rp 77.000' },
-      { name: '1060 Diamonds', price: 'Rp 155.000' },
-      { name: 'Weekly Membership', price: 'Rp 30.000' },
+      { name: '100 Diamonds', price: 'Rp 16.000', rawValue: 16000 },
+      { name: '310 Diamonds', price: 'Rp 46.000', rawValue: 46000 },
+      { name: '520 Diamonds', price: 'Rp 77.000', rawValue: 77000 },
+      { name: '1060 Diamonds', price: 'Rp 155.000', rawValue: 155000 },
+      { name: 'Weekly Membership', price: 'Rp 30.000', rawValue: 30000 },
     ]
   },
   {
@@ -53,13 +54,13 @@ export const GAMES: Game[] = [
     publisher: 'Tencent',
     category: 'MOBILE',
     image: 'https://images.hdqwalls.com/wallpapers/pubg-mobile-4k-game-cl.jpg',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1b/PUBG_Mobile_Logo.png/220px-PUBG_Mobile_Logo.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/en/1/1b/PUBG_Mobile_Logo.png',
     products: [
-      { name: '60 UC', price: 'Rp 14.500' },
-      { name: '325 UC', price: 'Rp 75.000' },
-      { name: '660 UC', price: 'Rp 150.000' },
-      { name: '1800 UC', price: 'Rp 375.000' },
-      { name: 'Royale Pass', price: 'Rp 160.000' },
+      { name: '60 UC', price: 'Rp 14.500', rawValue: 14500 },
+      { name: '325 UC', price: 'Rp 75.000', rawValue: 75000 },
+      { name: '660 UC', price: 'Rp 150.000', rawValue: 150000 },
+      { name: '1800 UC', price: 'Rp 375.000', rawValue: 375000 },
+      { name: 'Royale Pass', price: 'Rp 160.000', rawValue: 160000 },
     ]
   },
   {
@@ -68,12 +69,12 @@ export const GAMES: Game[] = [
     publisher: 'HoYoverse',
     category: 'PC',
     image: 'https://images8.alphacoders.com/116/1166747.jpg',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/5d/Genshin_Impact_logo.svg/1200px-Genshin_Impact_logo.svg.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/en/5/5d/Genshin_Impact_logo.svg',
     products: [
-      { name: '60 Genesis', price: 'Rp 16.000' },
-      { name: '300 Genesis', price: 'Rp 79.000' },
-      { name: '980 Genesis', price: 'Rp 249.000' },
-      { name: 'Welkin Moon', price: 'Rp 79.000' },
+      { name: '60 Genesis', price: 'Rp 16.000', rawValue: 16000 },
+      { name: '300 Genesis', price: 'Rp 79.000', rawValue: 79000 },
+      { name: '980 Genesis', price: 'Rp 249.000', rawValue: 249000 },
+      { name: 'Welkin Moon', price: 'Rp 79.000', rawValue: 79000 },
     ]
   },
   {
@@ -82,12 +83,12 @@ export const GAMES: Game[] = [
     publisher: 'Riot Games',
     category: 'PC',
     image: 'https://images7.alphacoders.com/114/thumb-1920-1149301.jpg',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Valorant_logo_-_pink_color_version.svg/2560px-Valorant_logo_-_pink_color_version.svg.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Valorant_logo_-_pink_color_version.svg',
     products: [
-      { name: '125 Points', price: 'Rp 15.000' },
-      { name: '420 Points', price: 'Rp 50.000' },
-      { name: '1375 Points', price: 'Rp 150.000' },
-      { name: '2400 Points', price: 'Rp 250.000' },
+      { name: '125 Points', price: 'Rp 15.000', rawValue: 15000 },
+      { name: '420 Points', price: 'Rp 50.000', rawValue: 50000 },
+      { name: '1375 Points', price: 'Rp 150.000', rawValue: 150000 },
+      { name: '2400 Points', price: 'Rp 250.000', rawValue: 250000 },
     ]
   },
   {
@@ -96,12 +97,12 @@ export const GAMES: Game[] = [
     publisher: 'Roblox Corp',
     category: 'MOBILE',
     image: 'https://images4.alphacoders.com/133/1339890.jpeg',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Roblox_logo.svg/2560px-Roblox_logo.svg.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Roblox_logo.svg',
     products: [
-      { name: '80 Robux', price: 'Rp 15.000' },
-      { name: '400 Robux', price: 'Rp 75.000' },
-      { name: '800 Robux', price: 'Rp 150.000' },
-      { name: '2000 Robux', price: 'Rp 375.000' },
+      { name: '80 Robux', price: 'Rp 15.000', rawValue: 15000 },
+      { name: '400 Robux', price: 'Rp 75.000', rawValue: 75000 },
+      { name: '800 Robux', price: 'Rp 150.000', rawValue: 150000 },
+      { name: '2000 Robux', price: 'Rp 375.000', rawValue: 375000 },
     ]
   },
   {
@@ -110,12 +111,12 @@ export const GAMES: Game[] = [
     publisher: 'Level Infinite',
     category: 'MOBILE',
     image: 'https://images5.alphacoders.com/135/1352496.jpeg',
-    logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/Honor_of_Kings_Logo.png/220px-Honor_of_Kings_Logo.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/en/e/e5/Honor_of_Kings_Logo.png',
     products: [
-      { name: '16 Tokens', price: 'Rp 3.000' },
-      { name: '80 Tokens', price: 'Rp 15.000' },
-      { name: '240 Tokens', price: 'Rp 45.000' },
-      { name: 'Weekly Card', price: 'Rp 30.000' },
+      { name: '16 Tokens', price: 'Rp 3.000', rawValue: 3000 },
+      { name: '80 Tokens', price: 'Rp 15.000', rawValue: 15000 },
+      { name: '240 Tokens', price: 'Rp 45.000', rawValue: 45000 },
+      { name: 'Weekly Card', price: 'Rp 30.000', rawValue: 30000 },
     ]
   },
   {
@@ -124,12 +125,12 @@ export const GAMES: Game[] = [
     publisher: 'Activision',
     category: 'MOBILE',
     image: 'https://images2.alphacoders.com/105/1057678.jpg',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Call_of_Duty_Mobile_Logo.png/640px-Call_of_Duty_Mobile_Logo.png',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Call_of_Duty_Mobile_Logo.png',
     products: [
-      { name: '53 CP', price: 'Rp 10.000' },
-      { name: '265 CP', price: 'Rp 50.000' },
-      { name: '530 CP', price: 'Rp 100.000' },
-      { name: 'Premium Pass', price: 'Rp 150.000' },
+      { name: '53 CP', price: 'Rp 10.000', rawValue: 10000 },
+      { name: '265 CP', price: 'Rp 50.000', rawValue: 50000 },
+      { name: '530 CP', price: 'Rp 100.000', rawValue: 100000 },
+      { name: 'Premium Pass', price: 'Rp 150.000', rawValue: 150000 },
     ]
   },
 ];

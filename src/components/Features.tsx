@@ -1,37 +1,84 @@
 import { useState } from 'react';
-import { Search, Trophy, Percent, Zap, Target } from 'lucide-react'; // Removed unused ArrowRight
 import { motion, AnimatePresence } from 'framer-motion';
+import { Calculator, Trophy, Search, Loader2 } from 'lucide-react';
+
+// --- 1. TRANSACTION LOOKUP ---
 export function TransactionLookup() {
-  const [invoice, setInvoice] = useState('');
-  
+  const [trxId, setTrxId] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSearch = () => {
+    if (!trxId) return;
+    setLoading(true);
+    setResult(null);
+    // Fake API call
+    setTimeout(() => {
+      setLoading(false);
+      setResult({
+        id: trxId,
+        status: 'SUCCESS',
+        item: '86 Diamonds',
+        game: 'Mobile Legends',
+        date: '2024-03-20 14:30'
+      });
+    }, 1500);
+  };
+
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#130d21]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-cyan-500" />
-        <h2 className="text-3xl font-black italic mb-2 text-white">TRACK ORDER</h2>
-        <p className="text-gray-400 mb-8">Enter your invoice number to track delivery status real-time.</p>
-        
-        <div className="relative max-w-md mx-auto group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full opacity-30 group-focus-within:opacity-100 transition duration-500 blur"></div>
-          <div className="relative flex">
-            <input 
-              type="text" 
-              value={invoice}
-              onChange={(e) => setInvoice(e.target.value)}
-              placeholder="INV-2024XXXX"
-              className="w-full bg-[#05020a] text-white border border-white/10 rounded-l-full py-4 pl-6 focus:outline-none placeholder:text-gray-600"
-            />
-            <button className="bg-white text-black font-bold px-6 rounded-r-full hover:bg-gray-200 transition-colors flex items-center gap-2">
-              <Search size={18} /> TRACK
-            </button>
+    <div className="max-w-xl mx-auto py-12">
+       <div className="glass-card p-8 rounded-[2rem] border border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+             <Search size={100} />
           </div>
-        </div>
-      </motion.div>
+          <h2 className="text-2xl font-black italic mb-6">TRACK ORDER</h2>
+          <div className="flex gap-2 mb-6">
+             <input 
+               type="text" 
+               placeholder="Enter Transaction ID (e.g. INV-123...)" 
+               value={trxId}
+               onChange={(e) => setTrxId(e.target.value)}
+               className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500 transition-colors"
+             />
+             <button onClick={handleSearch} disabled={loading} className="bg-white text-black px-6 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+                {loading ? <Loader2 className="animate-spin" /> : 'Check'}
+             </button>
+          </div>
+
+          <AnimatePresence>
+            {result && (
+              <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl">
+                 <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-green-400">Transaction Found</span>
+                    <span className="bg-green-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">PAID</span>
+                 </div>
+                 <div className="space-y-1 text-sm text-gray-300">
+                    <div className="flex justify-between"><span>Item</span><span className="text-white">{result.item}</span></div>
+                    <div className="flex justify-between"><span>Game</span><span className="text-white">{result.game}</span></div>
+                    <div className="flex justify-between"><span>Date</span><span className="text-white">{result.date}</span></div>
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+       </div>
     </div>
   );
 }
 
-// --- 2. WR CALCULATOR (NEON STYLE) ---
+// --- 2. WIN RATE CALCULATOR ---
+const CalcInput = ({ label, val, setVal, placeholder }: any) => (
+  <div>
+    <label className="block text-xs text-gray-500 font-bold uppercase mb-1">{label}</label>
+    <input 
+      type="number" 
+      value={val} 
+      onChange={(e) => setVal(Number(e.target.value))} 
+      className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500 font-mono text-cyan-400"
+      placeholder={placeholder}
+    />
+  </div>
+);
+
 export function WinRateCalculator() {
   const [matches, setMatches] = useState<any>('');
   const [wr, setWr] = useState<any>('');
@@ -39,117 +86,82 @@ export function WinRateCalculator() {
   const [result, setResult] = useState<string | null>(null);
 
   const calculate = () => {
-    if (!matches || !wr || !target) return;
-    const tMatch = Number(matches);
-    const tWr = Number(wr);
-    const tTarget = Number(target);
-    
-    if (tTarget > 100 || tTarget <= tWr) {
-      setResult("Invalid Target! (Must be higher than current WR)"); 
-      return;
-    }
+     if(!matches || !wr || !target) return;
+     const tMatch = matches;
+     const tWr = wr;
+     const tTarget = target;
+     
+     if (tTarget > 100 || tWr > 100) { setResult("Impossible! Max 100%"); return; }
 
-    const totalWin = (tMatch * tWr) / 100;
-    const remainMatch = ((tTarget * tMatch) - (100 * totalWin)) / (100 - tTarget);
-    setResult(`You need ${Math.ceil(remainMatch)} consecutive wins without losing.`);
+     // Formula: (TotalMatches * CurrentWR/100 + x) / (TotalMatches + x) = TargetWR/100
+     const currentWins = tMatch * (tWr / 100);
+     const needed = Math.ceil((tTarget * tMatch - 100 * currentWins) / (100 - tTarget));
+     
+     if (needed < 0) {
+       setResult(`You are already above ${tTarget}%! You can lose ${Math.abs(needed)} matches.`);
+     } else {
+       setResult(`You need to win ${needed} matches in a row (without losing).`);
+     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-        <div>
-          <h2 className="text-4xl font-black italic mb-4">WIN RATE <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">CALCULATOR</span></h2>
-          <p className="text-gray-400 mb-6">Calculate exactly how many matches you need to reach your dream Win Rate.</p>
-          <div className="flex flex-col gap-3">
-             <FeatureBadge icon={<Zap size={16} />} text="Instant Calculation" />
-             <FeatureBadge icon={<Target size={16} />} text="Accurate Algorithm" />
-          </div>
-        </div>
-        
-        <div className="bg-[#130d21]/80 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative">
-          <div className="space-y-4">
-            <CalcInput label="Total Matches" val={matches} setVal={setMatches} placeholder="e.g. 450" />
-            <CalcInput label="Current WR (%)" val={wr} setVal={setWr} placeholder="e.g. 48.5" />
-            <CalcInput label="Target WR (%)" val={target} setVal={setTarget} placeholder="e.g. 60.0" />
-            
-            <button onClick={calculate} className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-xl mt-4 flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-[1.02]">
-              <Percent size={18} /> CALCULATE RESULT
-            </button>
-          </div>
+    <div className="max-w-xl mx-auto py-12">
+       <div className="glass-card p-8 rounded-[2rem] border border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10"><Calculator size={100}/></div>
+          <h2 className="text-2xl font-black italic mb-6">WIN RATE CALCULATOR</h2>
           
+          <div className="space-y-4 mb-6">
+             <CalcInput label="Total Matches" val={matches} setVal={setMatches} placeholder="e.g. 500" />
+             <CalcInput label="Current WR (%)" val={wr} setVal={setWr} placeholder="e.g. 48.5" />
+             <CalcInput label="Target WR (%)" val={target} setVal={setTarget} placeholder="e.g. 50" />
+             
+             <button onClick={calculate} className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl font-black shadow-lg hover:scale-[1.02] transition-transform">
+                CALCULATE RESULT
+             </button>
+          </div>
+
           <AnimatePresence>
             {result && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl mt-4">
-                <p className="text-green-400 font-bold text-center text-sm">{result}</p>
-              </motion.div>
+               <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="p-4 bg-white/5 rounded-xl border border-white/10 text-center">
+                  <p className="text-cyan-400 font-bold">{result}</p>
+               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
+       </div>
     </div>
   );
 }
 
-// --- 3. LEADERBOARD (NEON GLASS) ---
+// --- 3. LEADERBOARD ---
 export function Leaderboard() {
   const topSpenders = [
     { name: "SultanBebas***", total: "Rp 15.400.000", rank: 1 },
     { name: "ProPlayerID***", total: "Rp 12.250.000", rank: 2 },
-    { name: "User8812***", total: "Rp 8.900.000", rank: 3 },
-    { name: "JessNoL***", total: "Rp 5.500.000", rank: 4 },
-    { name: "LemonKu***", total: "Rp 3.100.000", rank: 5 },
+    { name: "GeminiUser***", total: "Rp 9.800.000", rank: 3 },
+    { name: "MysticGlory", total: "Rp 5.200.000", rank: 4 },
+    { name: "EpicComeback", total: "Rp 2.100.000", rank: 5 },
   ];
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <div className="text-center mb-10">
-        <div className="inline-flex p-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-[0_0_30px_rgba(250,204,21,0.4)]">
-          <Trophy size={32} className="text-black" />
-        </div>
-        <h2 className="text-3xl font-black italic text-white">TOP SPENDERS</h2>
-        <p className="text-gray-400">The Hall of Fame of our Sultan customers.</p>
-      </div>
-
-      <div className="bg-[#130d21]/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden">
-        {topSpenders.map((user, idx) => (
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
-            key={idx} 
-            className={`flex items-center justify-between p-5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors ${idx < 3 ? 'bg-gradient-to-r from-purple-500/10 to-transparent' : ''}`}
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-10 h-10 flex items-center justify-center font-black italic rounded-lg shadow-lg ${
-                  idx === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-black' : 
-                  idx === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-black' : 
-                  idx === 2 ? 'bg-gradient-to-br from-orange-400 to-red-800 text-white' : 
-                  'bg-[#1A1A20] text-gray-500 border border-white/5'
-              }`}>
-                #{user.rank}
-              </div>
-              <span className={`font-bold ${idx < 3 ? 'text-white text-lg' : 'text-gray-400'}`}>{user.name}</span>
-            </div>
-            <span className="font-mono text-cyan-400 font-bold">{user.total}</span>
-          </motion.div>
-        ))}
-      </div>
+    <div className="max-w-xl mx-auto py-12">
+       <div className="glass-card p-8 rounded-[2rem] border border-white/10 relative overflow-hidden">
+         <div className="absolute top-0 right-0 p-3 opacity-10"><Trophy size={100}/></div>
+         <h2 className="text-2xl font-black italic mb-6">TOP SPENDERS</h2>
+         
+         <div className="space-y-3">
+            {topSpenders.map((user, i) => (
+               <div key={i} className={`flex items-center justify-between p-4 rounded-xl border ${i < 3 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border-yellow-500/30' : 'bg-white/5 border-white/5'}`}>
+                  <div className="flex items-center gap-4">
+                     <div className={`w-8 h-8 flex items-center justify-center font-black rounded-full ${i===0?'bg-yellow-400 text-black': i===1?'bg-gray-300 text-black': i===2?'bg-orange-700 text-white':'bg-white/10 text-gray-500'}`}>
+                        {user.rank}
+                     </div>
+                     <span className={`font-bold ${i < 3 ? 'text-white' : 'text-gray-400'}`}>{user.name}</span>
+                  </div>
+                  <span className="font-mono text-cyan-400 font-bold">{user.total}</span>
+               </div>
+            ))}
+         </div>
+       </div>
     </div>
   );
-}
-
-// Helpers
-function CalcInput({ label, val, setVal, placeholder }: any) {
-    return (
-        <div>
-            <label className="text-xs font-bold text-gray-400 ml-2 mb-1 block uppercase tracking-wider">{label}</label>
-            <input type="number" value={val} onChange={e => setVal(e.target.value)} className="w-full bg-[#0a0514] p-4 rounded-xl border border-white/10 focus:border-purple-500 outline-none text-white transition-all focus:shadow-[0_0_15px_rgba(168,85,247,0.3)]" placeholder={placeholder} />
-        </div>
-    )
-}
-
-function FeatureBadge({ icon, text }: any) {
-    return (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 text-sm text-gray-300">
-            <div className="text-purple-400">{icon}</div> {text}
-        </div>
-    )
 }
