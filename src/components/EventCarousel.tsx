@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { PanInfo, Variants, Transition } from 'framer-motion';
+import type { PanInfo, Variants, } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Clock, ArrowRight, Zap, Target, Star } from 'lucide-react';
 import { EVENTS } from '../data/events';
 

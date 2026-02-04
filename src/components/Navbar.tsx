@@ -1,4 +1,4 @@
-import { Search, Globe, LogOut, User, Gamepad2, Trophy, Calculator, FileText, CreditCard, ChevronDown, Settings, Sparkles } from 'lucide-react';
+import { Search, LogOut, User, Gamepad2, Trophy, Calculator, FileText, CreditCard, Settings, } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
