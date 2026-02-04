@@ -1,0 +1,43 @@
+// src/data/events.ts
+export const EVENTS = [
+  {
+    id: 1,
+    game: "Mobile Legends",
+    title: "M5 CHAMPIONSHIP",
+    subtitle: "YU ZHONG SKIN NOW",
+    desc: "The M5 Pass is finally here. Level up to get the exclusive Cosmic Dragon skin!",
+    image: "https://images5.alphacoders.com/134/1341071.jpeg",
+    color: "from-yellow-600 to-orange-600",
+    btnColor: "bg-yellow-500",
+  },
+  {
+    id: 2,
+    game: "Genshin Impact",
+    title: "LANTERN RITE",
+    subtitle: "VERSION 4.4 LIVE",
+    desc: "Celebrate the new year in Liyue with Xianyun and Gaming. Top up Genesis Crystals now.",
+    image: "https://images8.alphacoders.com/134/1347648.jpeg",
+    color: "from-cyan-500 to-teal-500",
+    btnColor: "bg-cyan-400",
+  },
+  {
+    id: 3,
+    game: "Free Fire",
+    title: "CHAOS EVENT",
+    subtitle: "INNER EVIL BUNDLE",
+    desc: "Vote for the Chaos event changes and win exclusive legendary bundles.",
+    image: "https://images2.alphacoders.com/112/1127945.jpg", 
+    color: "from-purple-600 to-pink-600",
+    btnColor: "bg-pink-500",
+  },
+  {
+    id: 4,
+    game: "Valorant",
+    title: "EPISODE 8: DEFIANCE",
+    subtitle: "NEW WEAPON: OUTLAW",
+    desc: "The first new gun since launch is here. Get the Kuronami bundle today!",
+    image: "https://images3.alphacoders.com/134/1345513.jpeg",
+    color: "from-red-600 to-rose-600",
+    btnColor: "bg-red-500",
+  },
+];
