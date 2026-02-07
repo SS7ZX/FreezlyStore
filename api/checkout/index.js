@@ -1,23 +1,20 @@
-import { createCheckout } from './service.js';
-import { ApiError } from '../lib/errors.js';
-
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+console.log('✅ checkout function loaded');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
 
   try {
-    // checkout logic
+    console.log('METHOD:', req.method);
+    console.log('BODY:', req.body);
+
+    // your logic here
+
+    return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Checkout failed' });
+    console.error('❌ CHECKOUT CRASH:', err);
+
+    return res.status(500).json({
+      error: 'Checkout failed',
+      message: err?.message || 'Unknown error'
+    });
   }
 }
