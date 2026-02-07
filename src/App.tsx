@@ -284,35 +284,30 @@ const [trxId] = useState('');
 
 // ... code atas sama ...
 
+   // --- INSIDE App.tsx -> handleCheckout ---
     } catch (err: any) {
         console.error("❌ Checkout Error Full:", err);
         
-        // --- LOGIC BARU: BONGKAR ISI ERROR ---
-        let pesanError = "Terjadi kesalahan";
+        let pesanError = "Terjadi kesalahan sistem.";
 
-        // Cek kalau errornya itu Objek, kita paksa jadi Teks
+        // --- IMPROVED ERROR HANDLING ---
         if (typeof err === 'object' && err !== null) {
-            // Kalau ada properti 'message', pakai itu
+            // Check if it's a standard error object
             if (err.message) {
-                // Hati-hati kalau message-nya ternyata objek juga (kasus Xendit error)
-                if (typeof err.message === 'object') {
-                    pesanError = JSON.stringify(err.message);
-                } else {
-                    pesanError = err.message;
-                }
+                pesanError = err.message;
             } else {
-                // Kalau gak ada message, print semua isinya
+                // If it's a raw object from API
                 pesanError = JSON.stringify(err);
             }
         } else {
             pesanError = String(err);
         }
 
-        // Tampilkan di layar
+        // Tampilkan di layar dengan jelas
         showToast("Error: " + pesanError, 'error');
         setIsProcessing(false);
     }
-  };
+// ...
 
   
   // Keyboard Shortcuts
@@ -762,5 +757,5 @@ const [trxId] = useState('');
 const ArrowIcon = ({ className }: { className?: string }) => (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
 );
-
+}
 export default App;
