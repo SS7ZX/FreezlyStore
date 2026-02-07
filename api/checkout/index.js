@@ -1,20 +1,29 @@
-export default async function handler(req, res) {
-console.log('✅ checkout function loaded');
+import { createCheckout } from './service.js';
 
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    console.log('METHOD:', req.method);
-    console.log('BODY:', req.body);
+    const result = await createCheckout(req.body);
 
-    // your logic here
+    // 🔒 HARD GUARANTEE
+    if (!result?.invoice_url) {
+      throw new Error('invoice_url missing from gateway response');
+    }
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({
+      invoice_url: result.invoice_url,
+      reference_id: result.reference_id
+    });
+
   } catch (err) {
-    console.error('❌ CHECKOUT CRASH:', err);
+    console.error('❌ CHECKOUT FAILED:', err);
 
     return res.status(500).json({
       error: 'Checkout failed',
-      message: err?.message || 'Unknown error'
+      message: err.message
     });
   }
 }

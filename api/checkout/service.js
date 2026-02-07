@@ -2,10 +2,13 @@ import { createXenditInvoice } from '../lib/xendit.client.js';
 import { supabase } from '../lib/supabase.client.js';
 import { ValidationError } from '../lib/errors.js';
 
-export async function checkoutService(data) {
-  if (!data?.userId || !data?.product || !data?.paymentMethod) {
-    throw new ValidationError('Missing required checkout fields');
-  }
+export async function createCheckout(payload) {
+  return {
+    invoice_url: 'https://example.com/mock-payment',
+    reference_id: `INV-${Date.now()}`
+  };
+}
+
 
   // 1️⃣ Create invoice
   const invoice = await createXenditInvoice({
@@ -43,4 +46,3 @@ export async function checkoutService(data) {
   }
 
   return invoice;
-}
