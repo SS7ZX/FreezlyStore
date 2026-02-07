@@ -206,60 +206,85 @@ const [trxId] = useState('');
   };
 
 // Di dalam App.tsx
-
-const handleCheckout = async () => {
-    // Validasi
+// ✅ VERSI FINAL: DEBUGGING MODE ON
+  const handleCheckout = async () => {
+    // 1. CEK KELENGKAPAN DATA
     if (!userId || !selectedProduct || !selectedPayment) {
-        showToast("Lengkapi data dulu bos!", 'error');
+        showToast("Lengkapi ID dan pilih item dulu!", 'error');
         return;
     }
 
     setIsProcessing(true);
+    console.log("🚀 Memulai Checkout..."); // Cek di Console Browser (F12)
 
     try {
-        // --- 1. BERSIHKAN HARGA (Fix Type Error) ---
-        let numericPrice: number;
+        // 2. BERSIHKAN HARGA (Convert String "Rp 10.000" -> Number 10000)
+        let numericPrice: number = 0;
+        
         if (typeof selectedProduct.price === 'string') {
-             // Hapus Rp dan titik
+             // Hapus semua yang bukan angka
              const cleanString = selectedProduct.price.replace(/[^0-9]/g, '');
              numericPrice = parseInt(cleanString);
         } else {
              numericPrice = Number(selectedProduct.price);
         }
         
-        // Hitung Diskon
-        const finalPrice = discount > 0 ? (numericPrice - discount) : numericPrice;
+        // Hitung Diskon (Pastikan hasil tidak minus)
+        let finalPrice = discount > 0 ? (numericPrice - discount) : numericPrice;
+        if (finalPrice < 0) finalPrice = 0;
 
-        // --- 2. PANGGIL BACKEND YANG BARU DIBUAT ---
+        console.log("💰 Harga Final:", finalPrice); 
+
+        // 3. KIRIM DATA KE BACKEND
         const response = await fetch('/api/checkout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json' // Penting! Biar server tau kita minta JSON
+            },
             body: JSON.stringify({
-                userId, zoneId, 
-                game: activeGame?.name, 
-                product: selectedProduct,
+                userId: userId,
+                zoneId: zoneId || "-", // Kalau kosong kasih strip
+                game: activeGame?.name || "Unknown Game", 
+                product: {
+                    name: selectedProduct.name, // Kirim nama item aja biar ringan
+                    price: finalPrice
+                },
                 paymentMethod: selectedPayment,
                 price: finalPrice 
             })
         });
 
+        // 4. CEK APAKAH RESPONNYA JSON ATAU ERROR HTML?
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            // Kalau bukan JSON, berarti Server Error (Halaman HTML Vercel)
+            const textError = await response.text();
+            console.error("🔥 Server Error (HTML):", textError);
+            throw new Error("Server bermasalah (Cek Console)");
+        }
+
         const result = await response.json();
 
-        if (!response.ok) throw new Error(result.error || "Server Error");
+        if (!response.ok) {
+            throw new Error(result.error || "Gagal memproses transaksi");
+        }
 
-        // --- 3. REDIRECT KE XENDIT ---
+        // 5. SUKSES! REDIRECT KE XENDIT
+        console.log("✅ Invoice URL:", result.invoice_url);
+        
         if (result.invoice_url) {
-            showToast("Mengarahkan ke Xendit...", 'success');
+            showToast("Mengarahkan ke pembayaran...", 'success');
             setTimeout(() => {
-                window.location.href = result.invoice_url; // Pindah halaman
+                window.location.href = result.invoice_url;
             }, 1000);
         } else {
-            throw new Error("Link pembayaran tidak ditemukan");
+            throw new Error("Invoice URL kosong dari server");
         }
 
     } catch (err: any) {
-        console.error(err);
-        showToast(err.message || "Gagal Transaksi", 'error');
+        console.error("❌ Checkout Error:", err);
+        showToast(err.message || "Terjadi kesalahan sistem", 'error');
         setIsProcessing(false);
     }
   };
