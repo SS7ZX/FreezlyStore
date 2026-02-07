@@ -172,7 +172,8 @@ function App() {
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [trxId, setTrxId] = useState('');
+ // Hapus setTrxId-nya aja, biarin trxId kalau emang dipake di bawah
+const [trxId] = useState('');
 
   // UI State
   const [isAuthOpen, setIsAuthOpen] = useState(false);
