@@ -207,8 +207,10 @@ const [trxId] = useState('');
 
 // Di dalam App.tsx
 
-const handleCheckout = async () => {
-    if(!userId || !selectedProduct || !selectedPayment) {
+// ✅ INI KODINGAN BARU (Paste di sini)
+ const handleCheckout = async () => {
+    // 1. Validasi Input
+    if (!userId || !selectedProduct || !selectedPayment) {
         showToast("Lengkapi data dulu bos!", 'error');
         return;
     }
@@ -216,23 +218,32 @@ const handleCheckout = async () => {
     setIsProcessing(true);
 
     try {
-        // Hitung harga final
-        // PENTING: Pastikan selectedProduct.price itu ANGKA (number), bukan string "Rp..."
-        // Kalau string, bersihkan dulu: parseInt(selectedProduct.price.replace(/[^0-9]/g, ''))
-        const priceAmount = typeof selectedProduct.price === 'string' 
-            ? parseInt(selectedProduct.price.replace(/[^0-9]/g, '')) 
-            : selectedProduct.price;
+        // --- BAGIAN PERBAIKAN TIPE DATA (FIX TS ERROR) ---
+        // Kita buat variabel baru khusus angka ('numericPrice')
+        // Biar TS gak bingung antara String "Rp 10.000" vs Number 10000
+        
+        let numericPrice: number;
 
-        const finalPrice = discount > 0 ? (priceAmount - discount) : priceAmount;
+        if (typeof selectedProduct.price === 'string') {
+             // Kalau formatnya text "Rp...", kita ambil angkanya saja
+             numericPrice = parseInt(selectedProduct.price.replace(/[^0-9]/g, ''));
+        } else {
+             // Kalau datanya memang sudah angka, langsung pakai
+             numericPrice = selectedProduct.price;
+        }
 
-        // PANGGIL API VERCEL KITA SENDIRI
+        // Sekarang aman dikurang-kurangi karena 'numericPrice' pasti angka
+        const finalPrice = discount > 0 ? (numericPrice - discount) : numericPrice;
+        // ----------------------------------------------------
+
+        // 2. Panggil API Backend
         const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: userId,
                 zoneId: zoneId,
-                game: activeGame?.name, // atau selectedGame.name
+                game: activeGame?.name, 
                 product: selectedProduct,
                 paymentMethod: selectedPayment,
                 price: finalPrice
@@ -243,15 +254,22 @@ const handleCheckout = async () => {
 
         if (!response.ok) throw new Error(result.error || "Gagal Transaksi");
 
-        // Redirect ke Xendit
-        window.location.href = result.invoice_url;
+        // 3. Redirect ke Xendit
+        if (result.invoice_url) {
+            showToast("Mengarahkan ke pembayaran...", 'success');
+            setTimeout(() => {
+                window.location.href = result.invoice_url;
+            }, 1000);
+        } else {
+            throw new Error("Invoice URL tidak ditemukan");
+        }
 
     } catch (err: any) {
-        console.error(err);
+        console.error("Checkout Error:", err);
         showToast(err.message || "Gagal menghubungkan ke server", 'error');
         setIsProcessing(false);
     }
-};
+  };
 
   // Keyboard Shortcuts
   useEffect(() => {
