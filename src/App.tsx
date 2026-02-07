@@ -282,13 +282,39 @@ const [trxId] = useState('');
             throw new Error("Invoice URL kosong dari server");
         }
 
+// ... code atas sama ...
+
     } catch (err: any) {
-        console.error("❌ Checkout Error:", err);
-        showToast(err.message || "Terjadi kesalahan sistem", 'error');
+        console.error("❌ Checkout Error Full:", err);
+        
+        // --- LOGIC BARU: BONGKAR ISI ERROR ---
+        let pesanError = "Terjadi kesalahan";
+
+        // Cek kalau errornya itu Objek, kita paksa jadi Teks
+        if (typeof err === 'object' && err !== null) {
+            // Kalau ada properti 'message', pakai itu
+            if (err.message) {
+                // Hati-hati kalau message-nya ternyata objek juga (kasus Xendit error)
+                if (typeof err.message === 'object') {
+                    pesanError = JSON.stringify(err.message);
+                } else {
+                    pesanError = err.message;
+                }
+            } else {
+                // Kalau gak ada message, print semua isinya
+                pesanError = JSON.stringify(err);
+            }
+        } else {
+            pesanError = String(err);
+        }
+
+        // Tampilkan di layar
+        showToast("Error: " + pesanError, 'error');
         setIsProcessing(false);
     }
   };
 
+  
   // Keyboard Shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
