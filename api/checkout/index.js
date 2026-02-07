@@ -10,32 +10,14 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // your checkout logic here
-}
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    const result = await createCheckout(req.body);
-
-    return res.status(200).json({
-      success: true,
-      data: result
-    });
+    // checkout logic
   } catch (err) {
-    console.error('🔥 CHECKOUT ERROR', {
-      name: err?.name,
-      message: err?.message,
-      stack: err?.stack
-    });
-
-    if (err instanceof ApiError) {
-      return res.status(err.status).json({
-        error: err.code,
-        message: err.message
-      });
-    }
-
-    return res.status(500).json({
-      error: 'INTERNAL_SERVER_ERROR',
-      message: 'Unexpected checkout failure'
-    });
+    console.error(err);
+    return res.status(500).json({ error: 'Checkout failed' });
   }
+}
