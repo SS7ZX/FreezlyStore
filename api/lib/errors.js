@@ -1,28 +1,8 @@
-export class AppError extends Error {
-  constructor(message, statusCode = 500, code = 'APP_ERROR') {
+export class ApiError extends Error {
+  constructor(message, statusCode = 500, details = null) {
     super(message);
+    this.name = 'ApiError';
     this.statusCode = statusCode;
-    this.code = code;
-  }
-}
-
-export class ValidationError extends AppError {
-  constructor(message) {
-    super(message, 400, 'VALIDATION_ERROR');
-  }
-}
-
-export class PaymentProviderError extends AppError {
-  constructor(message) {
-    super(message, 502, 'PAYMENT_PROVIDER_ERROR');
-  }
-}
-
-// api/lib/errors.js
-export class AppError extends Error {
-  constructor(message, statusCode = 500, code = 'APP_ERROR') {
-    super(message);
-    this.statusCode = statusCode;
-    this.code = code;
+    this.details = details;
   }
 }
