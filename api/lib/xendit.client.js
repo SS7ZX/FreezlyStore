@@ -2,7 +2,12 @@ import { PaymentProviderError } from './errors.js';
 import { v4 as uuid } from 'uuid';
 
 const SECRET = process.env.XENDIT_SECRET_KEY;
-if (!SECRET) throw new Error('XENDIT_SECRET_KEY missing');
+
+export function assertXenditEnv() {
+  if (!SECRET) {
+    throw new Error('XENDIT_SECRET_KEY missing');
+  }
+}
 
 const AUTH = Buffer.from(`${SECRET}:`).toString('base64');
 
