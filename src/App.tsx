@@ -207,9 +207,8 @@ const [trxId] = useState('');
 
 // Di dalam App.tsx
 
-// ✅ INI KODINGAN BARU (Paste di sini)
- const handleCheckout = async () => {
-    // 1. Validasi Input
+const handleCheckout = async () => {
+    // Validasi
     if (!userId || !selectedProduct || !selectedPayment) {
         showToast("Lengkapi data dulu bos!", 'error');
         return;
@@ -218,55 +217,49 @@ const [trxId] = useState('');
     setIsProcessing(true);
 
     try {
-        // --- BAGIAN PERBAIKAN TIPE DATA (FIX TS ERROR) ---
-        // Kita buat variabel baru khusus angka ('numericPrice')
-        // Biar TS gak bingung antara String "Rp 10.000" vs Number 10000
-        
+        // --- 1. BERSIHKAN HARGA (Fix Type Error) ---
         let numericPrice: number;
-
         if (typeof selectedProduct.price === 'string') {
-             // Kalau formatnya text "Rp...", kita ambil angkanya saja
-             numericPrice = parseInt(selectedProduct.price.replace(/[^0-9]/g, ''));
+             // Hapus Rp dan titik
+             const cleanString = selectedProduct.price.replace(/[^0-9]/g, '');
+             numericPrice = parseInt(cleanString);
         } else {
-             // Kalau datanya memang sudah angka, langsung pakai
-             numericPrice = selectedProduct.price;
+             numericPrice = Number(selectedProduct.price);
         }
-
-        // Sekarang aman dikurang-kurangi karena 'numericPrice' pasti angka
+        
+        // Hitung Diskon
         const finalPrice = discount > 0 ? (numericPrice - discount) : numericPrice;
-        // ----------------------------------------------------
 
-        // 2. Panggil API Backend
+        // --- 2. PANGGIL BACKEND YANG BARU DIBUAT ---
         const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: userId,
-                zoneId: zoneId,
+                userId, zoneId, 
                 game: activeGame?.name, 
                 product: selectedProduct,
                 paymentMethod: selectedPayment,
-                price: finalPrice
+                price: finalPrice 
             })
         });
 
         const result = await response.json();
 
-        if (!response.ok) throw new Error(result.error || "Gagal Transaksi");
+        if (!response.ok) throw new Error(result.error || "Server Error");
 
-        // 3. Redirect ke Xendit
+        // --- 3. REDIRECT KE XENDIT ---
         if (result.invoice_url) {
-            showToast("Mengarahkan ke pembayaran...", 'success');
+            showToast("Mengarahkan ke Xendit...", 'success');
             setTimeout(() => {
-                window.location.href = result.invoice_url;
+                window.location.href = result.invoice_url; // Pindah halaman
             }, 1000);
         } else {
-            throw new Error("Invoice URL tidak ditemukan");
+            throw new Error("Link pembayaran tidak ditemukan");
         }
 
     } catch (err: any) {
-        console.error("Checkout Error:", err);
-        showToast(err.message || "Gagal menghubungkan ke server", 'error');
+        console.error(err);
+        showToast(err.message || "Gagal Transaksi", 'error');
         setIsProcessing(false);
     }
   };
