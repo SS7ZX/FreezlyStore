@@ -80,7 +80,7 @@ export default function AuthModal({ isOpen, onClose, initialView, onLoginSuccess
   );
 }
 
-function SocialButton({ icon }: any) {
+function SocialButton({ icon }: { icon: React.ReactNode }) {
     return (
         <button className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors">
             {icon}

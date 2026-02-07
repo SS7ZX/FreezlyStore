@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import FloatingWidget from './components/FloatingWidget'; 
 import Toast from './components/Toast'; 
 import { WinRateCalculator, Leaderboard, TransactionLookup } from './components/Features';
+import { createCheckout } from './services/api';
 
 // --- IMPORTS ---
 import { GAMES } from './data/games'; 
@@ -35,19 +36,26 @@ const RECENT_BUYS = [
 
 // 1. The Meteor Shower (Background)
 const MeteorShower = () => {
-  // Memoize to prevent re-renders
-  const meteors = useMemo(() => Array.from({ length: 15 }), []);
+  // Memoize to prevent re-renders - generate all random values at once
+  const meteors = useMemo(() => {
+    const randomValues = Array.from({ length: 15 * 3 }, () => Math.random());
+    return Array.from({ length: 15 }).map((_, i) => ({
+      left: Math.floor(randomValues[i * 3] * 100) + "%",
+      animationDelay: randomValues[i * 3 + 1] * (0.8 - 0.2) + 0.2 + "s",
+      animationDuration: Math.floor(randomValues[i * 3 + 2] * (10 - 2) + 2) + "s",
+    }));
+  }, []);
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {meteors.map((_, i) => (
+      {meteors.map((meteor, i) => (
         <span
           key={i}
           className="absolute h-0.5 w-0.5 rotate-[215deg] animate-meteor rounded-[9999px] bg-slate-500 shadow-[0_0_0_1px_#ffffff10]"
           style={{
             top: 0,
-            left: Math.floor(Math.random() * 100) + "%",
-            animationDelay: Math.random() * (0.8 - 0.2) + 0.2 + "s",
-            animationDuration: Math.floor(Math.random() * (10 - 2) + 2) + "s",
+            left: meteor.left,
+            animationDelay: meteor.animationDelay,
+            animationDuration: meteor.animationDuration,
           }}
         >
           <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[50px] -translate-y-1/2 bg-gradient-to-r from-cyan-500 to-transparent" />
@@ -59,12 +67,15 @@ const MeteorShower = () => {
 
 // 2. Star Field (Background)
 const StarField = () => {
-    const stars = useMemo(() => Array.from({ length: 40 }).map(() => ({
-        top: Math.random() * 100 + '%',
-        left: Math.random() * 100 + '%',
-        size: Math.random() * 2 + 1,
-        delay: Math.random() * 5
-    })), []);
+    const stars = useMemo(() => {
+        const randomValues = Array.from({ length: 40 * 4 }, () => Math.random());
+        return Array.from({ length: 40 }).map((_, i) => ({
+            top: randomValues[i * 4] * 100 + '%',
+            left: randomValues[i * 4 + 1] * 100 + '%',
+            size: randomValues[i * 4 + 2] * 2 + 1,
+            delay: randomValues[i * 4 + 3] * 5
+        }));
+    }, []);
 
     return (
         <div className="absolute inset-0">
@@ -163,7 +174,7 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'MOBILE' | 'PC'>('ALL');
-  
+
   // Transaction State
   const [userId, setUserId] = useState('');
   const [zoneId, setZoneId] = useState('');
@@ -180,8 +191,8 @@ const [trxId] = useState('');
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error'; visible: boolean }>({ msg: '', type: 'success', visible: false });
 
-  const showToast = (msg: string, type: 'success' | 'error') => { 
-    setToast({ msg, type, visible: true }); 
+  const showToast = (msg: string, type: 'success' | 'error') => {
+    setToast({ msg, type, visible: true });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
   };
 
@@ -194,122 +205,66 @@ const [trxId] = useState('');
   const activeGame = GAMES.find(g => g.id === selectedGameId);
 
   // Handlers
-  const handleGameSelect = (id: string) => { 
-    setSelectedGameId(id); 
-    setCurrentView('HOME'); 
-    setUserId(''); 
-    setZoneId(''); 
-    setSelectedProduct(null); 
-    setSelectedPayment(null); 
+  const handleGameSelect = (id: string) => {
+    setSelectedGameId(id);
+    setCurrentView('HOME');
+    setUserId('');
+    setZoneId('');
+    setSelectedProduct(null);
+    setSelectedPayment(null);
     setDiscount(0);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
 // Di dalam App.tsx
 // ✅ VERSI FINAL: DEBUGGING MODE ON
-  const handleCheckout = async () => {
-    // 1. CEK KELENGKAPAN DATA
-    if (!userId || !selectedProduct || !selectedPayment) {
-        showToast("Lengkapi ID dan pilih item dulu!", 'error');
-        return;
+
+const handleCheckout = async () => {
+  if (!userId || !selectedProduct || !selectedPayment) {
+    showToast("Please complete all fields!", 'error');
+    return;
+  }
+
+  setIsProcessing(true);
+
+  try {
+    const response = await createCheckout({
+      userId: userId.trim(),
+      zoneId: zoneId?.trim(),
+      game: activeGame!.name,
+      product: {
+        name: selectedProduct.name,
+        price: selectedProduct.rawValue - discount
+      },
+      paymentMethod: selectedPayment,
+      price: selectedProduct.rawValue - discount
+    });
+
+    if (response.invoice_url) {
+      showToast("Redirecting to payment...", 'success');
+      setTimeout(() => {
+        window.location.href = response.invoice_url;
+      }, 1000);
     }
 
-    setIsProcessing(true);
-    console.log("🚀 Memulai Checkout..."); // Cek di Console Browser (F12)
+  } catch (err: unknown) {
+    console.error("❌ Checkout Error Full:", err);
 
-    try {
-        // 2. BERSIHKAN HARGA (Convert String "Rp 10.000" -> Number 10000)
-        let numericPrice: number = 0;
-        
-        if (typeof selectedProduct.price === 'string') {
-             // Hapus semua yang bukan angka
-             const cleanString = selectedProduct.price.replace(/[^0-9]/g, '');
-             numericPrice = parseInt(cleanString);
-        } else {
-             numericPrice = Number(selectedProduct.price);
-        }
-        
-        // Hitung Diskon (Pastikan hasil tidak minus)
-        let finalPrice = discount > 0 ? (numericPrice - discount) : numericPrice;
-        if (finalPrice < 0) finalPrice = 0;
-
-        console.log("💰 Harga Final:", finalPrice); 
-
-        // 3. KIRIM DATA KE BACKEND
-        const response = await fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json' // Penting! Biar server tau kita minta JSON
-            },
-            body: JSON.stringify({
-                userId: userId,
-                zoneId: zoneId || "-", // Kalau kosong kasih strip
-                game: activeGame?.name || "Unknown Game", 
-                product: {
-                    name: selectedProduct.name, // Kirim nama item aja biar ringan
-                    price: finalPrice
-                },
-                paymentMethod: selectedPayment,
-                price: finalPrice 
-            })
-        });
-
-        // 4. CEK APAKAH RESPONNYA JSON ATAU ERROR HTML?
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            // Kalau bukan JSON, berarti Server Error (Halaman HTML Vercel)
-            const textError = await response.text();
-            console.error("🔥 Server Error (HTML):", textError);
-            throw new Error("Server bermasalah (Cek Console)");
-        }
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error || "Gagal memproses transaksi");
-        }
-
-        // 5. SUKSES! REDIRECT KE XENDIT
-        console.log("✅ Invoice URL:", result.invoice_url);
-        
-        if (result.invoice_url) {
-            showToast("Mengarahkan ke pembayaran...", 'success');
-            setTimeout(() => {
-                window.location.href = result.invoice_url;
-            }, 1000);
-        } else {
-            throw new Error("Invoice URL kosong dari server");
-        }
-
-// ... code atas sama ...
-
-   // --- INSIDE App.tsx -> handleCheckout ---
-    } catch (err: any) {
-        console.error("❌ Checkout Error Full:", err);
-        
-        let pesanError = "Terjadi kesalahan sistem.";
-
-        // --- IMPROVED ERROR HANDLING ---
-        if (typeof err === 'object' && err !== null) {
-            // Check if it's a standard error object
-            if (err.message) {
-                pesanError = err.message;
-            } else {
-                // If it's a raw object from API
-                pesanError = JSON.stringify(err);
-            }
-        } else {
-            pesanError = String(err);
-        }
-
-        // Tampilkan di layar dengan jelas
-        showToast("Error: " + pesanError, 'error');
-        setIsProcessing(false);
+    let pesanError = "Terjadi kesalahan sistem.";
+    if (err instanceof Error) {
+      pesanError = err.message;
+    } else if (typeof err === 'object' && err !== null) {
+      pesanError = JSON.stringify(err);
+    } else {
+      pesanError = String(err);
     }
-// ...
 
-  
+    showToast("Error: " + pesanError, 'error');
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
   // Keyboard Shortcuts
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -757,5 +712,5 @@ const [trxId] = useState('');
 const ArrowIcon = ({ className }: { className?: string }) => (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
 );
-}
+
 export default App;

@@ -10,32 +10,41 @@ const AUTOPLAY_DELAY = 6000;
 // Creates the "Meteor Garden" / Shooting Star effect
 const MeteorShower = () => {
   // Generate static meteors to avoid re-renders causing jitter
-  const meteors = useMemo(() => Array.from({ length: 12 }), []);
+  const meteors = useMemo(() => {
+    const randomValues = Array.from({ length: 12 * 5 }, () => Math.random());
+    return Array.from({ length: 12 }).map((_, i) => ({
+      left: Math.floor(randomValues[i * 5] * 100) + "%",
+      leftEnd: `${Math.floor(randomValues[i * 5 + 1] * -20)}%`,
+      delay: randomValues[i * 5 + 2] * 10,
+      duration: randomValues[i * 5 + 3] * 5 + 3,
+      repeatDelay: randomValues[i * 5 + 4] * 5
+    }));
+  }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {meteors.map((_, i) => (
-        <Meteor key={i} delay={Math.random() * 10} duration={Math.random() * 5 + 3} />
+      {meteors.map((meteor, i) => (
+        <Meteor key={i} delay={meteor.delay} duration={meteor.duration} left={meteor.left} leftEnd={meteor.leftEnd} repeatDelay={meteor.repeatDelay} />
       ))}
     </div>
   );
 };
 
-const Meteor = ({ delay, duration }: { delay: number; duration: number }) => {
+const Meteor = ({ delay, duration, left, leftEnd, repeatDelay }: { delay: number; duration: number; left: string; leftEnd: string; repeatDelay: number }) => {
   return (
     <motion.div
-      initial={{ top: -100, left: Math.floor(Math.random() * 100) + "%", opacity: 0 }}
-      animate={{ 
-        top: "120%", 
-        left: [null, `${Math.random() * -20}%`], // Move slightly left as they fall
-        opacity: [0, 1, 1, 0] 
+      initial={{ top: -100, left, opacity: 0 }}
+      animate={{
+        top: "120%",
+        left: [null, leftEnd], // Move slightly left as they fall
+        opacity: [0, 1, 1, 0]
       }}
       transition={{
         duration: duration,
         repeat: Infinity,
         delay: delay,
         ease: "linear",
-        repeatDelay: Math.random() * 5
+        repeatDelay
       }}
       className="absolute flex items-center transform rotate-[215deg]"
     >
@@ -91,6 +100,15 @@ export default function EventCarousel() {
   const timeoutRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const paginate = (newDirection: number) => {
+    setDirection(newDirection);
+    if (newDirection === 1) {
+      setCurrent((prev) => (prev + 1) % EVENTS.length);
+    } else {
+      setCurrent((prev) => (prev === 0 ? EVENTS.length - 1 : prev - 1));
+    }
+  };
+
   const resetTimeout = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
@@ -114,16 +132,7 @@ export default function EventCarousel() {
     setMousePosition({ x, y });
   };
 
-  const paginate = (newDirection: number) => {
-    setDirection(newDirection);
-    if (newDirection === 1) {
-      setCurrent((prev) => (prev + 1) % EVENTS.length);
-    } else {
-      setCurrent((prev) => (prev === 0 ? EVENTS.length - 1 : prev - 1));
-    }
-  };
-
-  const handleDragEnd = (_: any, { offset }: PanInfo) => {
+  const handleDragEnd = (_: unknown, { offset }: PanInfo) => {
     if (offset.x < -50) paginate(1);
     else if (offset.x > 50) paginate(-1);
   };

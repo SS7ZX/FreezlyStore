@@ -5,7 +5,13 @@ import { Calculator, Trophy, Search, Loader2 } from 'lucide-react';
 // --- 1. TRANSACTION LOOKUP ---
 export function TransactionLookup() {
   const [trxId, setTrxId] = useState('');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    id: string;
+    status: string;
+    item: string;
+    game: string;
+    date: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = () => {
@@ -66,13 +72,13 @@ export function TransactionLookup() {
 }
 
 // --- 2. WIN RATE CALCULATOR ---
-const CalcInput = ({ label, val, setVal, placeholder }: any) => (
+const CalcInput = ({ label, val, setVal, placeholder }: { label: string; val: number; setVal: (val: number) => void; placeholder: string }) => (
   <div>
     <label className="block text-xs text-gray-500 font-bold uppercase mb-1">{label}</label>
-    <input 
-      type="number" 
-      value={val} 
-      onChange={(e) => setVal(Number(e.target.value))} 
+    <input
+      type="number"
+      value={val}
+      onChange={(e) => setVal(Number(e.target.value))}
       className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-cyan-500 font-mono text-cyan-400"
       placeholder={placeholder}
     />
@@ -80,9 +86,9 @@ const CalcInput = ({ label, val, setVal, placeholder }: any) => (
 );
 
 export function WinRateCalculator() {
-  const [matches, setMatches] = useState<any>('');
-  const [wr, setWr] = useState<any>('');
-  const [target, setTarget] = useState<any>('');
+  const [matches, setMatches] = useState<number>(0);
+  const [wr, setWr] = useState<number>(0);
+  const [target, setTarget] = useState<number>(0);
   const [result, setResult] = useState<string | null>(null);
 
   const calculate = () => {

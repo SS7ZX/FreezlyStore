@@ -1,58 +1,87 @@
-// File: api/checkout.js
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+// api/checkout.js
+import { createInvoice } from './lib/xendit.js';
+import { createTransaction } from './lib/supabase.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  const { userId, zoneId, game, product, paymentMethod, price } = req.body;
-  const externalID = `INV-${Date.now()}`;
-  const authString = Buffer.from(process.env.XENDIT_SECRET_KEY + ':').toString('base64');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    // 1. HIT XENDIT
-    const xenditResponse = await fetch('https://api.xendit.co/v2/invoices', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${authString}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        external_id: externalID,
-        amount: price,
-        description: `Topup ${game} - ${product.name}`,
-        currency: 'IDR',
-        customer: { given_names: userId },
-        success_redirect_url: 'https://freezly-store.vercel.app', 
-        failure_redirect_url: 'https://freezly-store.vercel.app'
-      })
-    });
+    const { userId, zoneId, game, product, paymentMethod, price } = req.body;
 
-    const xenditData = await xenditResponse.json();
-
-    if (!xenditResponse.ok) {
-        // --- INI BIAR ERRORNYA KELIHATAN ---
-        return res.status(500).json({ error: xenditData });
+    // Validation
+    if (!userId || !game || !product || !paymentMethod || !price) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'userId, game, product, paymentMethod, and price are required'
+      });
     }
 
-    // 2. SIMPAN KE SUPABASE
-    await supabase.from('transactions').insert({
-        external_id: externalID,
-        user_id: userId,
-        game: game,
-        product_name: product.name,
-        amount: price,
-        status: 'PENDING',
-        invoice_url: xenditData.invoice_url
+    if (typeof price !== 'number' || price <= 0) {
+      return res.status(400).json({
+        error: 'Invalid price',
+        message: 'Price must be a positive number'
+      });
+    }
+
+    console.log('Creating invoice for:', { userId, game, product: product.name, price });
+
+    // Create Xendit invoice
+    const invoiceData = await createInvoice({
+      userId,
+      game,
+      productName: product.name,
+      amount: price,
+      paymentMethod,
+      customerName: 'Game Player',
+      customerEmail: 'player@example.com',
+      frontendUrl: 'https://freezly-store.vercel.app'
     });
 
-    return res.status(200).json({ invoice_url: xenditData.invoice_url });
+    console.log('Invoice created:', invoiceData.external_id);
+
+    // Save to Supabase
+    await createTransaction({
+      externalId: invoiceData.external_id,
+      invoiceId: invoiceData.invoice_id,
+      invoiceUrl: invoiceData.invoice_url,
+      userId,
+      zoneId,
+      game,
+      productName: product.name,
+      paymentMethod,
+      amount: price,
+      expiryDate: invoiceData.expiry_date
+    });
+
+    console.log('Transaction saved to database');
+
+    return res.status(200).json({
+      success: true,
+      invoice_url: invoiceData.invoice_url,
+      invoice_id: invoiceData.invoice_id,
+      external_id: invoiceData.external_id,
+      amount: invoiceData.amount,
+      expiry_date: invoiceData.expiry_date
+    });
 
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error('Checkout error:', error);
+    return res.status(500).json({
+      error: 'Checkout failed',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
