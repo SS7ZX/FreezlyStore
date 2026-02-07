@@ -220,50 +220,53 @@ const [trxId] = useState('');
 // ✅ VERSI FINAL: DEBUGGING MODE ON
 
 const handleCheckout = async () => {
-  if (!userId || !selectedProduct || !selectedPayment) {
-    showToast("Please complete all fields!", 'error');
+  if (!activeGame || !userId || !selectedProduct || !selectedPayment) {
+    showToast("Please complete all required fields.", 'error');
     return;
   }
+
+  const finalPrice = Math.max(
+    selectedProduct.rawValue - discount,
+    0
+  );
 
   setIsProcessing(true);
 
   try {
     const response = await createCheckout({
       userId: userId.trim(),
-      zoneId: zoneId?.trim(),
-      game: activeGame!.name,
+      zoneId: zoneId?.trim() || undefined,
+      game: activeGame.name,
       product: {
         name: selectedProduct.name,
-        price: selectedProduct.rawValue - discount
+        price: finalPrice
       },
       paymentMethod: selectedPayment,
-      price: selectedProduct.rawValue - discount
+      price: finalPrice
     });
 
-    if (response.invoice_url) {
-      showToast("Redirecting to payment...", 'success');
-      setTimeout(() => {
-        window.location.href = response.invoice_url;
-      }, 1000);
+    if (!response.invoice_url) {
+      throw new Error('Payment gateway did not return invoice URL');
     }
 
-  } catch (err: unknown) {
-    console.error("❌ Checkout Error Full:", err);
+    showToast("Redirecting to payment...", 'success');
 
-    let pesanError = "Terjadi kesalahan sistem.";
-    if (err instanceof Error) {
-      pesanError = err.message;
-    } else if (typeof err === 'object' && err !== null) {
-      pesanError = JSON.stringify(err);
-    } else {
-      pesanError = String(err);
-    }
+    window.location.href = response.invoice_url;
 
-    showToast("Error: " + pesanError, 'error');
+  } catch (err) {
+    console.error("❌ Checkout Error:", err);
+
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Unexpected checkout error';
+
+    showToast(message, 'error');
   } finally {
     setIsProcessing(false);
   }
 };
+
 
   // Keyboard Shortcuts
   useEffect(() => {
