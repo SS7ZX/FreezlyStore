@@ -219,54 +219,72 @@ const [trxId] = useState('');
 // Di dalam App.tsx
 // ✅ VERSI FINAL: DEBUGGING MODE ON
 
-const handleCheckout = async () => {
-  if (!activeGame || !userId || !selectedProduct || !selectedPayment) {
-    showToast("Please complete all required fields.", 'error');
-    return;
-  }
-
-  const finalPrice = Math.max(
-    selectedProduct.rawValue - discount,
-    0
-  );
-
-  setIsProcessing(true);
-
-  try {
-    const response = await createCheckout({
-      userId: userId.trim(),
-      zoneId: zoneId?.trim() || undefined,
-      game: activeGame.name,
-      product: {
-        name: selectedProduct.name,
-        price: finalPrice
-      },
-      paymentMethod: selectedPayment,
-      price: finalPrice
-    });
-
-    if (!response.invoice_url) {
-      throw new Error('Payment gateway did not return invoice URL');
+// Ganti handleCheckout di App.tsx dengan ini:
+  const handleCheckout = async () => {
+    if (!userId || !selectedProduct || !selectedPayment) {
+        showToast("Lengkapi data dulu bos!", 'error');
+        return;
     }
 
-    showToast("Redirecting to payment...", 'success');
+    setIsProcessing(true);
+    console.log("🚀 Memulai Checkout ASLI (No Mockup)...");
 
-    window.location.href = response.invoice_url;
+    try {
+        // 1. Bersihkan Harga (Hanya ambil angka)
+        let numericPrice: number;
+        if (typeof selectedProduct.price === 'string') {
+             // @ts-ignore - Biar gak rewel TS-nya
+             const cleanString = selectedProduct.price.replace(/[^0-9]/g, '');
+             numericPrice = parseInt(cleanString);
+        } else {
+             numericPrice = Number(selectedProduct.price);
+        }
 
-  } catch (err) {
-    console.error("❌ Checkout Error:", err);
+        // 2. HIT API BACKEND (Wajib Connect)
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId, 
+                zoneId: zoneId || "-", 
+                game: activeGame?.name, 
+                product: selectedProduct,
+                paymentMethod: selectedPayment,
+                price: numericPrice 
+            })
+        });
 
-    const message =
-      err instanceof Error
-        ? err.message
-        : 'Unexpected checkout error';
+        // 3. Cek Error HTML (Server Meledak)
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            console.error("🔥 Server HTML Error:", text);
+            throw new Error("Server Error (Cek Console)");
+        }
 
-    showToast(message, 'error');
-  } finally {
-    setIsProcessing(false);
-  }
-};
+        const result = await response.json();
 
+        if (!response.ok) throw new Error(result.error || "Gagal Transaksi");
+
+        // 4. REDIRECT XENDIT (Wajib Ada Link)
+        if (result.invoice_url) {
+            showToast("Mengarahkan ke Xendit...", 'success');
+            console.log("🔗 Redirecting to:", result.invoice_url);
+            
+            // Kasih jeda dikit biar user baca toast
+            setTimeout(() => {
+                window.location.href = result.invoice_url; 
+            }, 1000);
+        } else {
+            throw new Error("Backend tidak memberikan Link Xendit!");
+        }
+
+    } catch (err: any) {
+        console.error("❌ ERROR CHECKOUT:", err);
+        showToast(typeof err === 'string' ? err : (err.message || "Gagal"), 'error');
+        setIsProcessing(false);
+    }
+  };
 
   // Keyboard Shortcuts
   useEffect(() => {
