@@ -49,18 +49,18 @@ interface TransactionLookupResponse {
 }
 
 // ============================================
-// ERROR CLASS (FIXED FOR ERASABLE SYNTAX)
+// ERROR CLASS (VERSI FIX: ERASABLE SYNTAX SAFE)
 // ============================================
 
 export class ApiError extends Error {
-  // ✅ FIX: Deklarasi manual properti agar kompatibel dengan erasableSyntaxOnly
-  public statusCode: number;
-  public details?: any;
+  // Kita deklarasikan property di luar constructor (Manual)
+  statusCode: number;
+  details?: any;
 
   constructor(statusCode: number, message: string, details?: any) {
     super(message);
     this.name = 'ApiError';
-    // ✅ FIX: Assign manual (bukan di dalam parameter constructor)
+    // Assign manual di sini
     this.statusCode = statusCode;
     this.details = details;
   }
@@ -138,18 +138,12 @@ async function fetchApi<T>(
 }
 
 // ============================================
-// CHECKOUT API
+// CHECKOUT API (Backend Function)
 // ============================================
 
 export async function createCheckout(
   request: CheckoutRequest
 ): Promise<CheckoutResponse> {
-  console.log('🚀 Creating checkout...', {
-    game: request.game,
-    product: request.product.name,
-    price: request.price,
-  });
-
   return await fetchApi<CheckoutResponse>('/api/checkout', {
     method: 'POST',
     body: JSON.stringify(request),
@@ -189,7 +183,7 @@ export async function getTransactionHistory(
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// HEALTH CHECK
 // ============================================
 
 export async function checkHealth(): Promise<{
