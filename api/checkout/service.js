@@ -4,7 +4,7 @@ import { ValidationError } from '../lib/errors.js';
 
 export async function createCheckout(payload) {
   return {
-    invoice_url: 'https://example.com/mock-payment',
+    invoice_url: 'https://freezylestore.web.app/api/checkout',
     reference_id: `INV-${Date.now()}`
   };
 }
